@@ -47,3 +47,9 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# Custom ones
+.DS_Store
+Data/
+*.RData
+*.zip
