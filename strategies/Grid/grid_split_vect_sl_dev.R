@@ -37,11 +37,11 @@ sum(seq(5,1000, 5)[1:n_t])*2
 nrow(tmp)/(7*24*4)
 
 # Set parameters table
-splits_reset <- data.table(splits_reset=c(12, 16, 25, 50),flag=1)
+splits_reset <- data.table(splits_reset=c(nrow(tmp)/(7*24*1), nrow(tmp)/(7*24*2), nrow(tmp)/(7*24*3), nrow(tmp)/(7*24*4)),flag=1)
 exit_points <- data.table(exit=seq(0.01,0.20 ,0.01), flag=1)
-start <-data.table(start= seq(0.01, 0.1, 0.01),flag=1)
-maxim <- data.table(maxim = c(0.1,0.15, 0.2),flag=1)
-n_trades <- data.table(n_trades=seq(5, 20, 5),flag=1)
+start <-data.table(start= seq(0.01, 0.2, 0.02),flag=1)
+maxim <- data.table(maxim = c(0.1,0.15, 0.2, 0.3),flag=1)
+n_trades <- data.table(n_trades=seq(20, 100, 20),flag=1)
 SL <- data.table(sl=seq(0.05, 0.1, 0.01),flag=1)
 params <- left_join(splits_reset,exit_points)%>%left_join(start)%>%left_join(maxim)%>%left_join(n_trades)%>%left_join(SL)
 
@@ -97,7 +97,7 @@ for (h in 1:nrow(params)){
                       exits = min(short_grid[, grid])*(1-params$exit[h]),
                       SL = max(grid)+max(grid)*params$sl[h],
                       SL_act = F,
-                      bet = seq(5, nrow(short_grid)*5, 5)
+                      bet =  5
     )]
     setorder(short_grid, grid)
     
@@ -117,7 +117,7 @@ for (h in 1:nrow(params)){
                      exits = max(long_grid[, grid])*(1+params$exit[h]),
                      SL = min(grid)-min(grid)*params$sl[h],
                      SL_act = F,
-                     bet = seq(5, nrow(short_grid)*5, 5)
+                     bet = 5
     )]
     setorder(long_grid, grid)
     
@@ -237,7 +237,7 @@ for (h in 1:nrow(params)){
   param_result[, hodl := (tail(tmp[, close], 1)-head(tmp[, close], 1))/head(tmp[, close], 1)]
   
   results[[h]] <- param_result
-  print(h)
+  print(param_result)
   
 }  
 
