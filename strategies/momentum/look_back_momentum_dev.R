@@ -3,6 +3,7 @@ gc()
 # Source functions
 library(profvis)
 library(runner)
+library(Rfast)
 path_source <- "Source"
 files.sources = list.files(path_source, full.names = T)
 sapply(files.sources, source)
@@ -49,7 +50,7 @@ h <- 1
 # s <- 1
 gc()
 s <- 1
-# p <- profvis({
+p <- profvis({
 
 # Loop through calendar days ---------------------------------------------------
 
@@ -57,15 +58,43 @@ results <- list()
 
 for (h in 1:nrow(params)){
   
-  max_fun <- function(x){
-    res <- median(sort(x[-((length(x) - params$exc_num[h]):length(x))],decreasing = T)[1:params$med_num[h]])
+  max_fun <- function(x) {
+    # Get parameters
+    exc_num <- params$exc_num[h]
+    med_num <- params$med_num[h]
+    
+    # Exclude the largest `exc_num` elements
+    len <- length(x)
+    subset <- x[-((len - exc_num + 1):len)]
+    
+    # Use Rfast::nth to find the top `med_num` largest values
+    top_values <- Rfast::nth(subset, k = med_num, descending = TRUE)
+    
+    # Compute the median of these top values
+    res <- median(top_values)
     return(res)
   }
   
-  min_fun <- function(x){
-    res <- median(sort(x[-((length(x) - params$exc_num[h]):length(x))],decreasing = F)[1:params$med_num[h]])
+  
+  
+  
+  min_fun <- function(x) {
+    # Get parameters
+    exc_num <- params$exc_num[h]
+    med_num <- params$med_num[h]
+    
+    # Exclude the largest `exc_num` elements
+    len <- length(x)
+    subset <- x[-((len - exc_num + 1):len)]
+    
+    # Use Rfast::nth to find the smallest `med_num` values
+    smallest_values <- Rfast::nth(subset, k = med_num, descending = FALSE)
+    
+    # Compute the median of these smallest values
+    res <- median(smallest_values)
     return(res)
   }
+  
   
   
   
@@ -147,6 +176,8 @@ for (h in 1:nrow(params)){
   print(res_tmp)
   
   }
+
+})
 View(rbindlist(results))
 
 # candles(tmp)+
@@ -157,7 +188,7 @@ View(rbindlist(results))
 # param_result
 
 
-# })
+# 
 # htmlwidgets::saveWidget(p, "profile.html")
 # Save
 # save(daily_res, file=paste0("~/Repositories/Private/QFL_Act/Code/Parameter_optim/Grid/results/", paste0(ticks,"_", units,"_", pair, Sys.time()), ".Rdata"))
