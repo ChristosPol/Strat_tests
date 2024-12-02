@@ -5,7 +5,7 @@ library(profvis)
 path_source <- "Source"
 files.sources = list.files(path_source, full.names = T)
 sapply(files.sources, source)
-pair <- "MANAUSD"
+pair <- "SCRTUSD"
 # pair <- "SHIBEUR"
 # Path to save results
 data_path <- "Data"
@@ -34,16 +34,24 @@ sum(seq(5,1000, 5)[1:n_t])*2
 # determine number of splits
 # one week, 2 weeks, 3 weeks, 4 weeks
 
-nrow(tmp)/(7*24*4)
+nrow(tmp)/(7*24*2)
 
 # Set parameters table
-splits_reset <- data.table(splits_reset=c(nrow(tmp)/(7*24*1), nrow(tmp)/(7*24*2), nrow(tmp)/(7*24*3), nrow(tmp)/(7*24*4)),flag=1)
-exit_points <- data.table(exit=seq(0.01,0.20 ,0.01), flag=1)
-start <-data.table(start= seq(0.01, 0.2, 0.02),flag=1)
-maxim <- data.table(maxim = c(0.1,0.15, 0.2, 0.3),flag=1)
-n_trades <- data.table(n_trades=seq(20, 100, 20),flag=1)
-SL <- data.table(sl=seq(0.05, 0.1, 0.01),flag=1)
+# splits_reset <- data.table(splits_reset=c(nrow(tmp)/(7*24*1), nrow(tmp)/(7*24*2), nrow(tmp)/(7*24*3), nrow(tmp)/(7*24*4)),flag=1)
+splits_reset <- data.table(splits_reset=c(nrow(tmp)/(3*24)),flag=1)
+exit_points <- data.table(exit=c(0.02), flag=1)
+start <-data.table(start= c(0.05),flag=1)
+maxim <- data.table(maxim = c(0.4),flag=1)
+n_trades <- data.table(n_trades=c(1),flag=1)
+SL <- data.table(sl=c(0.01),flag=1)
 params <- left_join(splits_reset,exit_points)%>%left_join(start)%>%left_join(maxim)%>%left_join(n_trades)%>%left_join(SL)
+
+
+# params <- data.table(splits_reset = 4, exit = 0.2, start = 0.2, maxim = 0.8, n_trades = 300, sl = 0.05)
+
+
+
+ 
 
 # For trade Ids
 all_chars <- c(LETTERS, 0:9)
@@ -241,7 +249,13 @@ for (h in 1:nrow(params)){
   
 }  
 
-View(rbindlist(results))
+candles(tmp)+
+  geom_point(data=final_grid[!is.na(interval_enter) & position == "long"], aes(x=interval_enter, y=grid), fill="lightblue3",colour="black", shape =24, size=2)+
+  geom_point(data=final_grid[!is.na(interval_exited) & position == "long" ], aes(x=interval_exited, y=exit_price), fill="lightblue3", colour="black",shape =25, size=2)+
+  geom_point(data=final_grid[!is.na(interval_enter) & position == "short"], aes(x=interval_enter, y=grid), fill="darkorchid1", colour="black", shape =25, size=2)+
+  geom_point(data=final_grid[!is.na(interval_exited) & position == "short"], aes(x=interval_exited, y=exit_price), fill="darkorchid1", colour="black",shape =24, size=2)
+param_result
+
 
 # })
 # htmlwidgets::saveWidget(p, "profile.html")
