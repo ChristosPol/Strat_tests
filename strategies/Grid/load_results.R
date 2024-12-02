@@ -5,28 +5,26 @@ path_source <- "Source"
 files.sources = list.files(path_source, full.names = T)
 sapply(files.sources, source)
 
-
 # load("~/Repositories/Private/QFL_Act/Code/Parameter_optim/Grid/results/60_minutes/")
-files <- list.files("~/Repositories/Private/QFL_Act/Code/Parameter_optim/Grid/results/60_minutes/", full.names = T)
-names <- gsub("60_minutes_|.Rdata","", list.files("~/Repositories/Private/QFL_Act/Code/Parameter_optim/Grid/results/60_minutes/"))
+files <- list.files("~/Repositories/Private/Strat_tests/results/60_minutes_A/", full.names = T)
+names <- gsub("60_minutes_|.Rdata","", list.files("~/Repositories/Private/Strat_tests/strategies/Grid/results/60_minutes_A/"))
 i <- 1
 res <- list()
 for (i in 1:length(files)){
   load(files[i])
-  res[[i]] <- rbindlist(daily_res)
-  res[[i]][ , concatenated := paste(splits_reset,exit,start,maxim,sl,n_trades , sep = "_")]
-  res[[i]][, res_usd := quote_res-total_bet]
-  res[[i]][is.nan(res_usd), res_usd := 0]
-  res[[i]][is.nan(percent), percent := 0]
-  res[[i]][, coin := names[i]]
+  res[[i]] <- copy(results_exp)
+  
   # res[[i]] <- res[[i]][order(-percent)][, head(.SD, 50), by = day]
-  rm(daily_res)
+  rm(results_exp)
 } 
 
 results <- rbindlist(res)
-results[, beat_hodl := ifelse(percent > hodl, T, F)]
-results[is.na(res_usd), res_usd :=0]
-results[is.na(percent), percent:=0]
+results[, beat_hodl := ifelse(total_percent > hodl, T, F)]
+
+View(unique(results[, .(max(total_percent), hodl), by =pair]))
+
+# results[is.na(quote_res), res_usd :=0]
+# results[is.na(percent), percent:=0]
 
 metrics <- results[, list(aver_percent=mean(percent),
                           mean_bet=mean(total_bet),
