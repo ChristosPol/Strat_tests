@@ -7,7 +7,7 @@ library(Rfast)
 path_source <- "Source"
 files.sources = list.files(path_source, full.names = T)
 sapply(files.sources, source)
-pair <- "ETHUSD"
+pair <- "SOLUSD"
 # pair <- "SHIBEUR"
 # Path to save results
 data_path <- "Data"
@@ -28,17 +28,26 @@ df <- trades_to_OHLC(pair = pair,
 df1 <- df[[1]]
 df1[, date:=as.Date(interval)]
 gc()
-
+candles(df1)
 
 
 # Set parameters table
-look_back <- data.table(bar=c(168*1, 168*2, 168*3,168*4),flag=1)
-SL <- data.table(sl=c(0.05),flag=1)
-TP <- data.table(tp=c(0.05, 0.1),flag=1)
-median_number <- data.table(med_num=seq(1, 20, 5),flag=1)
-last_exclude_number <- data.table(exc_num=seq(1, 20, 5),flag=1)
-params <- left_join(look_back,SL)%>%left_join(TP)%>%left_join(median_number)%>%left_join(last_exclude_number)
+# look_back <- data.table(bar=c(168*1, 168*2, 168*3,168*4),flag=1)
+# SL <- data.table(sl=c(0.05),flag=1)
+# TP <- data.table(tp=c(0.05, 0.1),flag=1)
+# median_number <- data.table(med_num=seq(1, 20, 5),flag=1)
+# last_exclude_number <- data.table(exc_num=seq(1, 20, 5),flag=1)
+# params <- left_join(look_back,SL)%>%left_join(TP)%>%left_join(median_number)%>%left_join(last_exclude_number)
+# params <- data.table(bar=336, sl =0.075, tp = 0.1, med_num = 20, exc_num=20)
 
+
+look_back <- data.table(bar=seq(48, 700, 24),flag=1)
+SL <- data.table(sl=c(0.05, 0.1, 0.2),flag=1)
+TP <- data.table(tp=c(0.05, 0.1, 0.2),flag=1)
+median_number <- data.table(med_num=seq(1, 31, 5),flag=1)
+last_exclude_number <- data.table(exc_num=seq(1, 31, 5),flag=1)
+params <- left_join(look_back,SL)%>%left_join(TP)%>%left_join(median_number)%>%left_join(last_exclude_number)
+# params <- data.table(bar=336, sl =0.075, tp = 0.1, med_num = 20, exc_num=20)
 
 # For trade Ids
 all_chars <- c(LETTERS, 0:9)
@@ -50,7 +59,7 @@ h <- 1
 # s <- 1
 gc()
 s <- 1
-p <- profvis({
+# p <- profvis({
 
 # Loop through calendar days ---------------------------------------------------
 
@@ -159,10 +168,17 @@ for (h in 1:nrow(params)){
   b <- tmp[!is.na(position), (close[position =="exit_short"]-close[position =="enter_short"])/close[position =="enter_short"], by=trade_id]
   c <- rbind(a, b)
   d <- tmp[!is.na(position)]
+  hours_in_long <- d[, list(hours=difftime(interval[position =="exit_long"], interval[position =="enter_long"], units="hours")), by =trade_id]
+  hours_in_short <- d[, list(hours=difftime(interval[position =="exit_short"], interval[position =="enter_short"], units="hours")), by =trade_id]
+  hours <- rbind(hours_in_long, hours_in_short)
   g <- d[, list(date=max(interval)), by =trade_id]
   k <- merge(c, g)
   setorder(k, date)
-  
+  k <- merge(k, hours)
+  k[, trade_fees:= 0.008]
+  k[, rollover_fees:= 0.0002* (as.numeric(hours)/4)]
+  k[, total_fees:= trade_fees+rollover_fees]
+  k[, V1 := V1 -total_fees]
   res_tmp <- params[h, ]
   res_tmp[, `:=` (n_trades = nrow(k),
                   win_rate = sum(k$V1>0)/nrow(k),
@@ -177,16 +193,18 @@ for (h in 1:nrow(params)){
   
   }
 
-})
+# })
 View(rbindlist(results))
 
-# candles(tmp)+
-#   geom_point(data=final_grid[!is.na(interval_enter) & position == "long"], aes(x=interval_enter, y=grid), fill="lightblue3",colour="black", shape =24, size=2)+
-#   geom_point(data=final_grid[!is.na(interval_exited) & position == "long" ], aes(x=interval_exited, y=exit_price), fill="lightblue3", colour="black",shape =25, size=2)+
-#   geom_point(data=final_grid[!is.na(interval_enter) & position == "short"], aes(x=interval_enter, y=grid), fill="darkorchid1", colour="black", shape =25, size=2)+
-#   geom_point(data=final_grid[!is.na(interval_exited) & position == "short"], aes(x=interval_exited, y=exit_price), fill="darkorchid1", colour="black",shape =24, size=2)
+p1 <- candles(tmp)+
+  geom_point(data=tmp[position == "enter_long"], aes(x=interval, y=close), fill="lightblue3",colour="black", shape =24, size=2)+
+  geom_point(data=tmp[position == "exit_long"], aes(x=interval, y=close), fill="lightblue3", colour="black",shape =25, size=2)+
+  geom_point(data=tmp[position == "enter_short"], aes(x=interval, y=close), fill="darkorchid1", colour="black", shape =25, size=2)+
+  geom_point(data=tmp[position == "exit_short"], aes(x=interval, y=close), fill="darkorchid1", colour="black",shape =24, size=2)+
+  geom_line(data=tmp, aes(x=interval, y =resistance))+
+  geom_line(data=tmp, aes(x=interval, y =support))
 # param_result
-
+p1
 
 # 
 # htmlwidgets::saveWidget(p, "profile.html")
