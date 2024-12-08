@@ -7,7 +7,7 @@ library(Rfast)
 path_source <- "Source"
 files.sources = list.files(path_source, full.names = T)
 sapply(files.sources, source)
-pair <- "SOLUSD"
+pair <- "OCEANUSD"
 # pair <- "SHIBEUR"
 # Path to save results
 data_path <- "Data"
@@ -47,8 +47,8 @@ TP <- data.table(tp=c(0.05, 0.1, 0.2),flag=1)
 median_number <- data.table(med_num=seq(1, 31, 5),flag=1)
 last_exclude_number <- data.table(exc_num=seq(1, 31, 5),flag=1)
 params <- left_join(look_back,SL)%>%left_join(TP)%>%left_join(median_number)%>%left_join(last_exclude_number)
-# params <- data.table(bar=336, sl =0.075, tp = 0.1, med_num = 20, exc_num=20)
-
+params <- data.table(bar=336, sl =0.075, tp = 0.1, med_num = 20, exc_num=20)
+# params <- params[1:10]
 # For trade Ids
 all_chars <- c(LETTERS, 0:9)
 str_len <- 20
@@ -128,7 +128,7 @@ for (h in 1:nrow(params)){
       tmp[ind_enter, position := "enter_long"]
       rand <- paste(sample(all_chars, str_len, replace = TRUE), collapse = "")
       tmp[ind_enter, trade_id:=rand]
-      price_entered <- tmp[ind_enter:nrow(tmp), ][position == "enter_long", close]
+      price_entered <- tmp[ind_enter:.N, ][position == "enter_long", close]
       tmp[ind_enter:nrow(tmp), diff := c(0, cumsum(diff(tmp[ind_enter:nrow(tmp), close])))/price_entered]
       ind_exit <- which(tmp$diff>params$tp[h]|tmp$diff<params$sl[h]*(-1))[1]
       
@@ -148,9 +148,9 @@ for (h in 1:nrow(params)){
       tmp[ind_enter, position := "enter_short"]
       rand <- paste(sample(all_chars, str_len, replace = TRUE), collapse = "")
       tmp[ind_enter, trade_id:=rand]
-      price_entered <- tmp[ind_enter:nrow(tmp), ][position == "enter_short", close]
+      price_entered <- tmp[ind_enter:.N, ][position == "enter_short", close]
       tmp[ind_enter:nrow(tmp), diff := (-1)*c(0, cumsum(diff(tmp[ind_enter:nrow(tmp), close])))/price_entered]
-      ind_exit <- which(tmp$diff< (-1)*params$tp[h]|tmp$diff>params$sl[h])[1]
+      ind_exit <- which(tmp$diff> params$tp[h]|tmp$diff<params$sl[h]*(-1))[1]
       
       if(is.na(ind_exit)){
         ind_exit <- nrow(tmp)
@@ -165,7 +165,7 @@ for (h in 1:nrow(params)){
     
     }
   a <- tmp[!is.na(position), (close[position =="exit_long"]-close[position =="enter_long"])/close[position =="enter_long"], by=trade_id]
-  b <- tmp[!is.na(position), (close[position =="exit_short"]-close[position =="enter_short"])/close[position =="enter_short"], by=trade_id]
+  b <- tmp[!is.na(position), -1*(close[position =="exit_short"]-close[position =="enter_short"])/close[position =="enter_short"], by=trade_id]
   c <- rbind(a, b)
   d <- tmp[!is.na(position)]
   hours_in_long <- d[, list(hours=difftime(interval[position =="exit_long"], interval[position =="enter_long"], units="hours")), by =trade_id]
@@ -178,14 +178,14 @@ for (h in 1:nrow(params)){
   k[, trade_fees:= 0.008]
   k[, rollover_fees:= 0.0002* (as.numeric(hours)/4)]
   k[, total_fees:= trade_fees+rollover_fees]
-  k[, V1 := V1 -total_fees]
+  k[, V2 := V1 -total_fees]
   res_tmp <- params[h, ]
   res_tmp[, `:=` (n_trades = nrow(k),
-                  win_rate = sum(k$V1>0)/nrow(k),
-                  aver_trade = mean(k$V1),
-                  sum_per = sum(k$V1),
+                  win_rate = sum(k$V2>0)/nrow(k),
+                  aver_trade = mean(k$V2),
+                  sum_per = sum(k$V2),
                   init_funds =funds,
-                  final_funds = funds+cumsum(funds*k$V1)[length(k$V1)])]
+                  final_funds = funds+cumsum(funds*k$V2)[length(k$V2)])]
   
   results[[h]] <- res_tmp
   print(h)
@@ -202,11 +202,43 @@ p1 <- candles(tmp)+
   geom_point(data=tmp[position == "enter_short"], aes(x=interval, y=close), fill="darkorchid1", colour="black", shape =25, size=2)+
   geom_point(data=tmp[position == "exit_short"], aes(x=interval, y=close), fill="darkorchid1", colour="black",shape =24, size=2)+
   geom_line(data=tmp, aes(x=interval, y =resistance))+
-  geom_line(data=tmp, aes(x=interval, y =support))
+  geom_line(data=tmp, aes(x=interval, y =support))+
+  
+  
+  scale_x_datetime(
+    date_breaks = "7 days",    # Set breaks every 7 days
+    date_labels = "%b %d"     # Customize labels (e.g., "Jan 01")
+  )+
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1) # Rotate x-axis labels
+  )
+  # geom_line(data=tmp[!is.na(position)], aes(x = interval, y = close, group = trade_id, colour = ifelse(V1>0, "blue", "black")))+
+  # scale_color_manual(values = c("blue" = "blue", "black" = "black"))
+
 # param_result
 p1
 
+tmp <- merge(tmp, k[, .(trade_id, V2)], by = "trade_id", all.x = T)
+
+# candles(tmp)+
+#   geom_line(data=tmp[!is.na(position)], aes(x = interval, y = close, group = trade_id))
+
+p2 <- ggplot(data = tmp[!is.na(position)], aes(x = interval, y = close, group = trade_id)) +
+  geom_line(linewidth = 2, aes(color = ifelse(V2 > 0, "blue", "black"))) +
+  scale_color_identity() + 
+  theme_bw() + 
+  theme(legend.position = "none") +
+  scale_x_datetime(
+    date_breaks = "7 days",    # Set breaks every 7 days
+    date_labels = "%b %d"     # Customize labels (e.g., "Jan 01")
+  )+
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1) # Rotate x-axis labels
+  )
+ggarrange(p1, p2, nrow=2)
 # 
 # htmlwidgets::saveWidget(p, "profile.html")
 # Save
 # save(daily_res, file=paste0("~/Repositories/Private/QFL_Act/Code/Parameter_optim/Grid/results/", paste0(ticks,"_", units,"_", pair, Sys.time()), ".Rdata"))
+
+
