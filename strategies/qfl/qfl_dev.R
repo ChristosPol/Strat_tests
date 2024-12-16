@@ -1,6 +1,7 @@
 rm(list=ls())
 gc()
 # Source functions
+funds <- 5000
 library(profvis)
 path_source <- "Source"
 files.sources = list.files(path_source, full.names = T)
@@ -32,6 +33,28 @@ for (i in 1:length(data)){
 }
 gc()
 
+# get all pairs equal dates!
+# Need to calculate bet size of everything together
+g_d <- function(x) {
+  mi <- as.Date(min(x$interval))
+  ma <- as.Date(max(x$interval))
+  return(c(mi, ma))
+}
+
+periods <- lapply(data_list, function(x) g_d(x))
+periods <- data.table(left=as.Date(unlist(lapply(periods, "[[", 1))), right= as.Date(unlist(lapply(periods, "[[", 2))))
+setDT(periods)
+periods[, pair := names]
+periods[, pair:as.factor(pair)]
+
+ggplot(periods, aes(y = pair)) +
+  geom_segment(aes(x = left, xend = right, y = pair, yend = pair, color = pair), size = 1.5) +
+  # geom_text(aes(x = left, label = pair), hjust = -0.1, size = 4, color = "black") +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 12), legend.position = "none")
+
+data_list[[length(data_list)]] <- NULL
+
 # hourly
 # look_back <- data.table(bar=c(floor(nrow(tmp)/(7*24*1)), floor(nrow(tmp)/(7*24*2)), floor(nrow(tmp)/(3*24))),flag=1)
 # TP <- data.table(tp=seq(0.01, 0.2, 0.01),flag=1)
@@ -51,24 +74,25 @@ grid <-  -1*seq(0.05, 0.3, 0.01)
 # For trade Ids
 all_chars <- c(LETTERS, 0:9)
 str_len <- 20
-
+fund_list_param <- list()
+fund_list_pair <- list()
 pair_results <- list()
 # Loopm through all pairs
 i <- 1
 for (i in 1:length(data_list)){
   tmp <- copy(data_list[[i]])
    
-  look_back <- data.table(bar=c(floor(nrow(tmp)/(10)), floor(nrow(tmp)/(14)), floor(nrow(tmp)/(30)) ),flag=1)
+  look_back <- data.table(bar=c(floor(nrow(tmp)/(5)) ),flag=1)
   # look_back <- data.table(bar=c(floor(nrow(tmp)/(10)) ),flag=1)
-  TP <- data.table(tp=c(0.01, 0.02, 0.03, 0.04, 0.05),flag=1)
-  median_number <- data.table(med_num=c(1,2,3, 4,5),flag=1)
+  TP <- data.table(tp=c(0.02),flag=1)
+  median_number <- data.table(med_num=c(2),flag=1)
   params <- left_join(look_back,TP)%>%left_join(median_number)
-  params[bar == floor(nrow(tmp)/(3)), bar_day := "3 days"]
-  params[bar == floor(nrow(tmp)/(7)), bar_day := "7 days"]
-  params[bar == floor(nrow(tmp)/(14)), bar_day := "14 days"]
-  params[bar == floor(nrow(tmp)/(30)), bar_day := "30 days"]
-  params[bar == floor(nrow(tmp)/(10)), bar_day := "10 days"]
-  
+  # params[bar == floor(nrow(tmp)/(3)), bar_day := "3 days"]
+  # params[bar == floor(nrow(tmp)/(7)), bar_day := "7 days"]
+  # params[bar == floor(nrow(tmp)/(14)), bar_day := "14 days"]
+  # params[bar == floor(nrow(tmp)/(30)), bar_day := "30 days"]
+  # params[bar == floor(nrow(tmp)/(10)), bar_day := "10 days"]
+  params[bar == floor(nrow(tmp)/(5)), bar_day := "5 days"]
   params[, bar_day :=factor(bar_day, levels = c(unique(params$bar_day)))]
   
   # pair operation start
@@ -147,6 +171,8 @@ for (i in 1:length(data_list)){
     }
     
     all_batches <- rbindlist(batch)
+    if(nrow(all_batches) == 0) break
+    
     high_tmp <- tmp[, high]
     low_tmp <- tmp[, high]
     
@@ -178,6 +204,19 @@ for (i in 1:length(data_list)){
     final_grid[, usd_res := percent*bet]
     final_grid[, trade_pos_outcome := ifelse(percent >0, T, F)]
     
+    dd <- merge(final_grid[, list( entr = sum(bet)), by =interval_enter], final_grid[, list(exit=sum(bet)), by =interval_exit_tp], by.x = "interval_enter", by.y ="interval_exit_tp", all = T)
+    dd[is.na(entr), entr:= 0]
+    dd[is.na(exit), exit:= 0]
+    dd[, cumsum_entries:= cumsum(entr)]
+    dd[, cumsum_exit:= cumsum(exit)]
+    
+    dd[, funds_pair:= -entr+exit]
+    dd[, avail_funds := cumsum(funds_pair)]
+    fund_list_param[[h]] <- dd
+    ggplot(data=dd, aes(x =interval_enter, y = cumsum_entries-cumsum_exit))+
+      geom_line()
+    
+    
     param_result <- copy(params[h,])
     param_result[, aver_percent := mean(final_grid$percent)]
     
@@ -202,6 +241,8 @@ for (i in 1:length(data_list)){
   tmp_res[, pair := unique(tmp$pair)]
   print(tmp_res)
   pair_results[[i]] <- tmp_res
+  fund_list_pair[[i]] <- fund_list_param
+  
 }
 
 
