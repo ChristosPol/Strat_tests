@@ -162,9 +162,8 @@ pair_results <- list()
 # grid <-  -1*seq(0.01, 0.2, 0.025)
 # cover_funds <- length(grid)*length(data_list)*bet
 # stopifnot(cover_funds<funds)
-names
-i <- 1
-unlist(lapply(data_list, nrow))
+# p <- profvis({
+
 for (i in 1:length(data_list)){
 # for (i in 120:160){
   tmp <- copy(data_list[[i]])
@@ -173,16 +172,16 @@ for (i in 1:length(data_list)){
                                 floor(nrow(tmp)/(48)), floor(nrow(tmp)/(72))),flag=1)
   # 24 hours_0.08_5_0.01_0.4_0.01
   # look_back <- data.table(bar=c(floor(nrow(tmp)/(24)) ),flag=1)
-  TP <- data.table(tp=c(0.05,0.08,0.1, 0.15, 0.2, 0.3),flag=1)
-  # TP <- data.table(tp = c(0.08),flag=1)
-  # median_number <- data.table(med_num=c(1,2,4,5,3),flag=1)
-  median_number <- data.table(med_num=c(5),flag=1)
-  start_point <- data.table(start_point = c(0.01,0.025, 0.05),flag=1)
-  end_point <- data.table(end_point = c(0.1,0.2, 0.3, 0.4),flag=1)
-  step <- data.table(step = c(0.01,0.025, 0.05),flag=1)
-  # start_point <- data.table(start_point = c(0.01),flag=1)
-  # end_point <- data.table(end_point = c(0.04),flag=1)
-  # step <- data.table(step = c(0.04),flag=1)
+  # TP <- data.table(tp=c(0.05,0.08,0.1, 0.15, 0.2, 0.3),flag=1)
+  TP <- data.table(tp = c(0.08),flag=1)
+  median_number <- data.table(med_num=c(1,2,4,5,3),flag=1)
+  # median_number <- data.table(med_num=c(5),flag=1)
+  # start_point <- data.table(start_point = c(0.01,0.025, 0.05),flag=1)
+  # end_point <- data.table(end_point = c(0.1,0.2, 0.3, 0.4),flag=1)
+  # step <- data.table(step = c(0.01,0.025, 0.05),flag=1)
+  start_point <- data.table(start_point = c(0.01),flag=1)
+  end_point <- data.table(end_point = c(0.04),flag=1)
+  step <- data.table(step = c(0.04),flag=1)
   params <- left_join(look_back,TP)%>%left_join(median_number)%>%
     left_join(start_point)%>%
     left_join(end_point)%>%
@@ -229,8 +228,7 @@ for (i in 1:length(data_list)){
                               status_enter="open",
                               status_exit = "open")
       
-      long_grid[, `:=`(trade_id = replicate(nrow(long_grid), paste(sample(all_chars, str_len, replace = TRUE), collapse = "")),
-                       batch=s, 
+      long_grid[, `:=`(batch=s, 
                        batch_offset=offset[s],
                        interval_enter = as.POSIXct(rep(NA, nrow(long_grid))),
                        interval_exit_tp = as.POSIXct(rep(NA, nrow(long_grid))),
@@ -353,6 +351,10 @@ for (i in 1:length(data_list)){
   fund_list_pair[[i]] <- fund_list_param
   
 }
+
+  
+})
+# htmlwidgets::saveWidget(p, "profile.html")  
 fund_list_pair <- bind_rows(lapply(fund_list_pair, bind_rows))
 # fund_list_pair <- lapply(fund_list_pair, as.data.frame)
 # fund_list_pair <- rbindlist(fund_list_pair)
