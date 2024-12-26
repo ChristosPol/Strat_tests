@@ -7,7 +7,7 @@ library(Rfast)
 path_source <- "Source"
 files.sources = list.files(path_source, full.names = T)
 sapply(files.sources, source)
-pair <- "OCEANUSD"
+pair <- "ADAUSD"
 # pair <- "SHIBEUR"
 # Path to save results
 data_path <- "Data"
@@ -22,14 +22,32 @@ intervals <- paste(ticks, units, sep = " ")
 
 df <- trades_to_OHLC(pair = pair,
                      interval = intervals,
-                     from_date = "2023-03-27",
-                     to_date = "2023-03-30",
+                     from_date = "2024-04-01",
+                     to_date = "2024-10-01",
                      date_subset = F)
 df1 <- df[[1]]
+# df1[, category := cut_interval(close, n = 10)]
+# View(sort(table(df1$category)))
+# candles(df1)+
+#   geom_hline(yintercept = c(0.174,0.234))+geom_hline(yintercept = c(0.355,0.415, 0.415,0.475, 0.295,0.355))
 df1[, date:=as.Date(interval)]
-gc()
 candles(df1)
+# par(mfrow=c(2,1))
+# d <- acf(diff(df1$close), lag.max = 2)
+# d <- acf(diff(df1$close), lag.max = 6000)
+# which(d$acf>(0.5))
+# gc()
+# pacf(diff(df1$close), lag.max = 500)
+# 
+# plot(cumsum(diff(df1$close))[1:2], type="l")
+# shift(df1$close,n=1, type="lag")
+# 
+# lagged <- data.table(cumsum(diff(df1$close)), cumsum(diff(shift(df1$close,n=3, type="lag"), pad=0)))
+# lagged <-lagged[!is.na(V2)]
+# cor(lagged$V1, lagged$V2)
 
+# plot(df1$close[1:(length(df1$close)-3)],df1$close[3:length(df1$close)])
+# length(df1$close[3:(length(df1$close)-3)])
 
 # Set parameters table
 # look_back <- data.table(bar=c(168*1, 168*2, 168*3,168*4),flag=1)
@@ -41,13 +59,23 @@ candles(df1)
 # params <- data.table(bar=336, sl =0.075, tp = 0.1, med_num = 20, exc_num=20)
 
 
-look_back <- data.table(bar=seq(48, 700, 24),flag=1)
-SL <- data.table(sl=c(0.05, 0.1, 0.2),flag=1)
-TP <- data.table(tp=c(0.05, 0.1, 0.2),flag=1)
-median_number <- data.table(med_num=seq(1, 31, 5),flag=1)
-last_exclude_number <- data.table(exc_num=seq(1, 31, 5),flag=1)
+# look_back <- data.table(bar=seq(48, 700, 24),flag=1)
+# SL <- data.table(sl=c(0.05, 0.1, 0.2),flag=1)
+# TP <- data.table(tp=c(0.05, 0.1, 0.2),flag=1)
+# median_number <- data.table(med_num=seq(1, 31, 5),flag=1)
+# last_exclude_number <- data.table(exc_num=seq(1, 31, 5),flag=1)
+# params <- left_join(look_back,SL)%>%left_join(TP)%>%left_join(median_number)%>%left_join(last_exclude_number)
+# params <- data.table(bar=30, sl =0.1, tp = 0.2, med_num = 5, exc_num=5)
+
+# Daily
+look_back <- data.table(bar=seq(60, 120, 30),flag=1)
+SL <- data.table(sl=seq(0.05, 0.13, 0.03),flag=1)
+TP <- data.table(tp=seq(0.05, 0.2, 0.015),flag=1)
+median_number <- data.table(med_num=seq(1, 20, 1),flag=1)
+last_exclude_number <- data.table(exc_num=seq(1, 20, 1),flag=1)
 params <- left_join(look_back,SL)%>%left_join(TP)%>%left_join(median_number)%>%left_join(last_exclude_number)
-params <- data.table(bar=336, sl =0.075, tp = 0.1, med_num = 20, exc_num=20)
+params <- data.table(bar=168, sl =0.15, tp = 0.15, med_num = 5, exc_num=10)
+
 # params <- params[1:10]
 # For trade Ids
 all_chars <- c(LETTERS, 0:9)
@@ -112,6 +140,7 @@ for (h in 1:nrow(params)){
   supp <- runner(x = tmp$close, k = params$bar[h], f = min_fun, na_pad = T)
   tmp[, resistance := resist]
   tmp[, support := supp]
+  tmp[, mid_line:= (resistance+support)/2]
   tmp[close>resistance, signal :="long"]
   tmp[close<support, signal :="short"]
   
@@ -194,7 +223,7 @@ for (h in 1:nrow(params)){
   }
 
 # })
-View(rbindlist(results))
+# View(rbindlist(results))
 
 p1 <- candles(tmp)+
   geom_point(data=tmp[position == "enter_long"], aes(x=interval, y=close), fill="lightblue3",colour="black", shape =24, size=2)+
@@ -203,7 +232,7 @@ p1 <- candles(tmp)+
   geom_point(data=tmp[position == "exit_short"], aes(x=interval, y=close), fill="darkorchid1", colour="black",shape =24, size=2)+
   geom_line(data=tmp, aes(x=interval, y =resistance))+
   geom_line(data=tmp, aes(x=interval, y =support))+
-  
+  geom_line(data=tmp, aes(x=interval, y =mid_line))+
   
   scale_x_datetime(
     date_breaks = "7 days",    # Set breaks every 7 days
