@@ -1,11 +1,11 @@
 rm(list=ls())
 gc()
 # Source functions
-library(profvis)
+strat_name <- "grid_cont"
 path_source <- "Source"
 files.sources = list.files(path_source, full.names = T)
 sapply(files.sources, source)
-pair <- "ARBUSD"
+pair <- "XXMRZUSD"
 # pair <- "SHIBEUR"
 # Path to save results
 data_path <- "Data"
@@ -29,23 +29,34 @@ gc()
 
 # Bet size
 n_t <- 20
-sum(seq(5,1000, 5)[1:n_t])*2
+# sum(seq(5,1000, 5)[1:n_t])*2
 
 # determine number of splits
 # one week, 2 weeks, 3 weeks, 4 weeks
 
-nrow(tmp)/(7*24*4)
+floor(nrow(tmp)/(7*24*4))
 
 # Set parameters table
-splits_reset <- data.table(splits_reset=c(12, 16, 25, 50),flag=1)
-exit_points <- data.table(exit=seq(0.01,0.20 ,0.01), flag=1)
-start <-data.table(start= seq(0.01, 0.1, 0.01),flag=1)
-maxim <- data.table(maxim = c(0.1,0.15, 0.2),flag=1)
-n_trades <- data.table(n_trades=seq(5, 20, 5),flag=1)
+splits_reset <- data.table(splits_reset=c(nrow(tmp)/(7*24*1), nrow(tmp)/(7*24*2), nrow(tmp)/(7*24*3), nrow(tmp)/(7*24*4)),flag=1)
+exit_points <- data.table(exit=seq(0.1,0.20 ,0.025), flag=1)
+#exit_points <- data.table(exit=seq(0.05,0.20 ,0.01), flag=1)
+start <-data.table(start= seq(0.05, 0.20, 0.05),flag=1)
+maxim <- data.table(maxim = c(0.3, 0.4),flag=1)
+n_trades <- data.table(n_trades=seq(100, 100, 25),flag=1)
 SL <- data.table(sl=seq(0.05, 0.1, 0.01),flag=1)
 params <- left_join(splits_reset,exit_points)%>%left_join(start)%>%left_join(maxim)%>%left_join(n_trades)%>%left_join(SL)
+params <- data.table(splits_reset = 142.6488, exit = 0.175, start = 0.2, maxim = 0.4, n_trades = 100, sl = 0.05)
+params1 <- params[187]
+ str(params)
+params1$flag <-NULL
 
+
+# params <- parNULL# params <- params[1:500]
 # For trade Ids
+all.equal(params, params1)
+params$splits_reset==params1$splits_reset
+params$exit==params1$exit
+
 all_chars <- c(LETTERS, 0:9)
 str_len <- 20
 
@@ -97,7 +108,7 @@ for (h in 1:nrow(params)){
                       exits = min(short_grid[, grid])*(1-params$exit[h]),
                       SL = max(grid)+max(grid)*params$sl[h],
                       SL_act = F,
-                      bet = seq(5, nrow(short_grid)*5, 5)
+                      bet =  5
     )]
     setorder(short_grid, grid)
     
@@ -117,7 +128,7 @@ for (h in 1:nrow(params)){
                      exits = max(long_grid[, grid])*(1+params$exit[h]),
                      SL = min(grid)-min(grid)*params$sl[h],
                      SL_act = F,
-                     bet = seq(5, nrow(short_grid)*5, 5)
+                     bet =  5
     )]
     setorder(long_grid, grid)
     
@@ -238,11 +249,15 @@ for (h in 1:nrow(params)){
   
   results[[h]] <- param_result
   print(h)
-  
+  print(param_result)
 }  
 
-
+results_exp <- rbindlist(results)
+results_exp[, pair:=pair]
 # })
 # htmlwidgets::saveWidget(p, "profile.html")
 # Save
-save(daily_res, file=paste0("~/Repositories/Private/QFL_Act/Code/Parameter_optim/Grid/results/", paste0(ticks,"_", units,"_", pair, Sys.time()), ".Rdata"))
+save(results_exp, file = paste0(getwd(),"/results/", paste0(ticks,"_", units,"_", pair,"_", strat_name), ".Rdata"))
+
+
+candles(tmp)

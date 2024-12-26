@@ -177,6 +177,7 @@ get_balance <- function (url, key, secret) {
 }
 
 # Download historical trade data for selected pair using initial id ------------
+# Download historical trade data for selected pair using initial id ------------
 hist_trades_pair <- function(sleep, hist_id, pair){
   repeat {
     Sys.sleep(sleep)
@@ -202,16 +203,19 @@ hist_trades_pair <- function(sleep, hist_id, pair){
     # [1] "price"         "volume"        "time"          "buy_sell"      "market_limit" 
     # [6] "miscellaneous" "trade_id"      "last_time"     "Date_POSIXct"  "Time"         
     # [11] "Date"          "Hour" 
+    
     hist_id <- dat$result$last
+    
     file <- paste0(paste(pair_data_results, pair, sep = "/"), ".csv.gz")
     fwrite(temp, file, sep = ",", row.names = FALSE,
-                col.names = FALSE,
-                append = TRUE)
+           col.names = FALSE,
+           append = TRUE)
     print(paste0("Current time: " ,Sys.time()))
     print(paste0("Period of 1000 trades received: ",
                  head(as.character(temp$Date_POSIXct), 1),
                  "-" ,
                  tail(as.character(temp$Date_POSIXct), 1)))
+    if(tail(temp$Date,1) ==(Sys.Date())) break # last batch empty
   }
 }
 
