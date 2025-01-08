@@ -265,49 +265,6 @@ metrics_pair[, percent:= sum_quote/funds]
 metrics_pair[percent>mean_hodl, .N]
 
 
-# 
-# Function for ticket and asset info
-# asset_info_ticker <- function(){
-# 
-# }
-# 
-# 
-# url <- paste0("https://api.kraken.com/0/public/AssetPairs")
-# tb <- jsonlite::fromJSON(url)
-# tb$result$AAVEEUR
-# 
-# # Extract and combine into a dataframe
-# df <- do.call(rbind, lapply(tb$result, function(x) {
-#   data.frame(
-#     altname = x$altname,
-#     base = x$base,
-#     quote = x$quote,
-#     aclass_base = x$aclass_base,
-#     ordermin = x$ordermin,
-#     costmin = x$costmin,
-#     stringsAsFactors = FALSE
-#   )
-# }))
-# rownames(df) <- NULL
-# 
-# 
-# url <- paste0("https://api.kraken.com/0/public/Ticker")
-# tb <- jsonlite::fromJSON(url)
-# price_info <- data.table(PAIR = names(tb$result),
-#                          PRICE = as.numeric(lapply(lapply(tb$result, "[[", 3), "[", 1)))
-# volume_info <- data.table(PAIR = names(tb$result),
-#                           VOLUME_24hours = as.numeric(lapply(lapply(tb$result, "[[", 4), "[", 2)))
-# 
-# 
-# df <- merge(df,price_info, by.x = "altname", by.y = "PAIR", all.x = T)
-# df <- merge(df,volume_info, by.x = "altname", by.y = "PAIR", all.x = T)
-# setDT(df)
-# df[, USD_amount := PRICE* VOLUME_24hours]
-# 
-# View(df)
-# 
-# 
-
 
 
 

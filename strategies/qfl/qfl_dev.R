@@ -49,6 +49,9 @@ gc()
 data_list_bk <- copy(data_list)
 
 # RESTART HERE
+left_date <- "2024-01-01"
+right_date <- "2024-12-01"
+
 names <- list.files(data_path, full.names = F)
 
 data_list <- copy(data_list_bk)
@@ -69,18 +72,16 @@ periods[, pair := names]
 periods[, pair:as.factor(pair)]
 
 
-ggplot(periods, aes(y = pair)) +
-  geom_segment(aes(x = left, xend = right, y = pair, yend = pair, color = pair), size = 1.5) +
-  theme_minimal() +
-  theme(axis.text.y = element_text(size = 12), legend.position = "none")
+# ggplot(periods, aes(y = pair)) +
+#   geom_segment(aes(x = left, xend = right, y = pair, yend = pair, color = pair), size = 1.5) +
+#   theme_minimal() +
+#   theme(axis.text.y = element_text(size = 12), legend.position = "none")
 
 
 # Define which pairs have the same time period
-rand_left <- sample(seq(min(periods$left),max(periods$left), "days"), 1)
-left_date <- rand_left
-right_date <- as.Date(left_date)+ days(180)
-left_date <- "2021-01-01"
-right_date <- "2024-12-01"
+# rand_left <- sample(seq(min(periods$left),max(periods$left), "days"), 1)
+# left_date <- rand_left
+# right_date <- as.Date(left_date)+ days(180)
 # 24 hours_0.3_5
 
 calendar_times <- function(x){
@@ -130,20 +131,29 @@ periods <- data.table(left=as.Date(unlist(lapply(periods, "[[", 1))), right= as.
 setDT(periods)
 periods[, pair := names]
 periods[, pair:as.factor(pair)]
-ggplot(periods, aes(y = pair)) +
-  geom_segment(aes(x = left, xend = right, y = pair, yend = pair, color = pair), size = 1.5) +
-  # geom_text(aes(x = left, label = pair), hjust = -0.1, size = 4, color = "black") +
-  theme_minimal() +
-  theme(axis.text.y = element_text(size = 12), legend.position = "none")
+# ggplot(periods, aes(y = pair)) +
+#   geom_segment(aes(x = left, xend = right, y = pair, yend = pair, color = pair), size = 1.5) +
+#   # geom_text(aes(x = left, label = pair), hjust = -0.1, size = 4, color = "black") +
+#   theme_minimal() +
+#   theme(axis.text.y = element_text(size = 12), legend.position = "none")
 
 
-selected <- sample(names, 30,replace = F)
-selected <- c("XXRPZUSD", "XXLMZUSD", "XXBTZUSD", "XLTCZUSD", "XETHZUSD"
-              , "XETCZUSD", "XDGUSD", "SUSHIUSD", "SOLUSD", "SHIBUSD"
-              , "MKRUSD", "MATICUSD", "LINKUSD", "INJUSD", "GNOUSD"
-              , "ENJUSD", "DOTUSD", "BCHUSD", "BANDUSD", "AVAXUSD", "ATOMUSD"
-              , "ALGOUSD", "ADAUSD", "AAVEUSD")
-
+# selected <- sample(names, 27, replace = F)
+# selected <- c("XXBTZUSD",  "XXRPZUSD" , "SOLUSD"  ,  "XDGUSD"   , "ADAUSD" ,   "ALGOUSD" ,  "FTMUSD"  ,  "LINKUSD" ,  "DOTUSD"   , "TAOUSD"   ,
+#               "WIFUSD" ,   "AVAXUSD"  , "ONDOUSD"  , "UNIUSD"  ,  "BONKUSD"  , "STXUSD"  ,  "FWOGUSD"  , "XTZUSD" ,   "SEIUSD" ,   "TIAUSD"   ,
+#               "SHIBUSD" ,  "RENDERUSD", "NEARUSD"  , "INJUSD"  ,  "RUNEUSD" ,  "SUPERUSD" , "FETUSD" ,   "EIGENUSD", "FLRUSD"   , "KASUSD"   ,
+#               "SANDUSD" ,  "FILUSD"  ,  "ICPUSD" ,   "DAIUSD"  ,  "ARBUSD"  ,  "APTUSD"  ,  "BCHUSD"  ,  "KSMUSD"  ,  "TONUSD"  ,  "SCRTUSD"  ,
+#               "JASMYUSD" , "POPCATUSD", "MOGUSD"  ,  "SYNUSD"  ,  "APEUSD"   , "JUPUSD"  ,  "MATICUSD"  ,"WBTCUSD"  , "GOATUSD"  , "ATOMUSD"  ,
+#               "CLOUDUSD" , "SGBUSD"  ,  "PYTHUSD" ,  "GALAUSD"  , "AKTUSD"  ,  "NANOUSD"  , "APUUSD"  ,  "GRTUSD"  ,  "FLOWUSD" ,  "OPUSD"    ,
+#               "LUNAUSD" ,  "ARKMUSD"  , "IMXUSD"  ,  "MANAUSD"  , "JTOUSD"  ,  "POLUSD"  ,  "DASHUSD" ,  "PNUTUSD"  , "DRIFTUSD" , "NOSUSD"   ,
+#               "CVXUSD"  ,  "COTIUSD" ,  "BONDUSD"  , "MKRUSD"  ,  "ZROUSD"  ,  "FLOKIUSD" , "RAYUSD"  ,  "PONKEUSD" , "EGLDUSD" ,  "GMTUSD"   ,
+#               "MINAUSD" ,  "WUSD"    ,  "MSOLUSD" ,  "STRKUSD" ,  "OCEANUSD" , "HNTUSD"  ,  "API3USD" ,  "ZKUSD"   ,  "KAVAUSD" ,  "LCXUSD"   ,
+#               "DYDXUSD"  , "ENSUSD"   , "HONEYUSD" , "RARIUSD" ,  "SNXUSD" ,   "BSXUSD"  ,  "ETHFIUSD" , "ENJUSD"  ,  "EWTUSD"  ,  "BTTUSD"   ,
+#               "CFGUSD"  ,  "POLISUSD" , "MEWUSD"  ,  "SCUSD"  ,   "ACAUSD"  ,  "PRCLUSD" ,  "LUNA2USD" , "EOSUSD" ,   "GLMRUSD" ,  "JUNOUSD"  ,
+#               "ZRXUSD"  ,  "RADUSD"  ,  "ICXUSD"  ,  "NEIROUSD"  ,"SAGAUSD" ,  "GALUSD"  ,  "RENUSD" ,   "BLURUSD"  , "LSKUSD"  ,  "BLZUSD"   ,
+#               "OMGUSD"  ,  "AXSUSD"  ,  "ACHUSD"  ,  "KEYUSD"  ,  "LRCUSD"  ,  "COMPUSD" ,  "BODENUSD"  ,"TREMPUSD" , "WAXLUSD"  , "LPTUSD" )
+# selected <- selected[1:10]
+selected <- sample(names, 10)
 idx <- which(names %in%selected)
 data <- data[idx]
 names <- names[idx]
@@ -163,25 +173,32 @@ pair_results <- list()
 # cover_funds <- length(grid)*length(data_list)*bet
 # stopifnot(cover_funds<funds)
 # p <- profvis({
+start_time <- Sys.time()
 
 for (i in 1:length(data_list)){
 # for (i in 120:160){
   tmp <- copy(data_list[[i]])
   
-  look_back <- data.table(bar=c(floor(nrow(tmp)/(24)),
-                                floor(nrow(tmp)/(48)), floor(nrow(tmp)/(72))),flag=1)
+  # look_back <- data.table(bar=c(floor(nrow(tmp)/(24, 48, 72, 168))),flag=1)
   # 24 hours_0.08_5_0.01_0.4_0.01
-  # look_back <- data.table(bar=c(floor(nrow(tmp)/(24)) ),flag=1)
-  # TP <- data.table(tp=c(0.05,0.08,0.1, 0.15, 0.2, 0.3),flag=1)
-  TP <- data.table(tp = c(0.08),flag=1)
-  median_number <- data.table(med_num=c(1,2,4,5,3),flag=1)
-  # median_number <- data.table(med_num=c(5),flag=1)
+  # look_back <- data.table(bar=c(floor(nrow(tmp)/(24)), floor(nrow(tmp)/(48)), floor(nrow(tmp)/(72)),
+  #                               floor(nrow(tmp)/(168)), floor(nrow(tmp)/(504)), floor(nrow(tmp)/(336))),flag=1)
+  look_back <- data.table(bar=c(floor(nrow(tmp)/(168))),flag=1)
+  # look_back <- data.table(bar=c(floor(nrow(tmp)/(24))),flag=1)
+  # TP <- data.table(tp=c(0.02,0.05,0.08,0.1),flag=1)
+  # TP <- data.table(tp = c(0.2),flag=1)
+  TP <- data.table(tp = c(0.01, 0.025, 0.05,0.08, 0.1, 0.15),flag=1)
+  # median_number <- data.table(med_num=c(1,2,4,5,3),flag=1)
+  median_number <- data.table(med_num=c(5),flag=1)
+  start_point <- data.table(start_point = c(0.01,0.025, 0.05),flag=1)
+  end_point <- data.table(end_point = c(0.1,0.2, 0.3, 0.4),flag=1)
+  step <- data.table(step = c(0.01,0.025, 0.05),flag=1)
+  # start_point <- data.table(start_point = c(0.05),flag=1)
   # start_point <- data.table(start_point = c(0.01,0.025, 0.05),flag=1)
-  # end_point <- data.table(end_point = c(0.1,0.2, 0.3, 0.4),flag=1)
-  # step <- data.table(step = c(0.01,0.025, 0.05),flag=1)
-  start_point <- data.table(start_point = c(0.01),flag=1)
-  end_point <- data.table(end_point = c(0.04),flag=1)
-  step <- data.table(step = c(0.04),flag=1)
+  # end_point <- data.table(end_point = c(0.1, 0.3, 0.4),flag=1)
+  # end_point <- data.table(end_point = c(0.4),flag=1)
+  step <- data.table(step = c(0.01, 0.025,0.05, 0.1),flag=1)
+  # step <- data.table(step = c(0.01),flag=1)
   params <- left_join(look_back,TP)%>%left_join(median_number)%>%
     left_join(start_point)%>%
     left_join(end_point)%>%
@@ -190,8 +207,8 @@ for (i in 1:length(data_list)){
   params[bar == floor(nrow(tmp)/(48)), bar_day := "48 hours"]
   params[bar == floor(nrow(tmp)/(72)), bar_day := "72 hours"]
   params[bar == floor(nrow(tmp)/(168)), bar_day := "168 hours"]
-  # params[bar == floor(nrow(tmp)/(10)), bar_day := "10 days"]
-  # params[bar == floor(nrow(tmp)/(24)), bar_day := "24 days"]
+  params[bar == floor(nrow(tmp)/(504)), bar_day := "504 hours"]
+  params[bar == floor(nrow(tmp)/(336)), bar_day := "336 hours"]
   # params[bar == floor(nrow(tmp)/(5)), bar_day := "5 days"]
   params[, bar_day :=factor(bar_day, levels = c(unique(params$bar_day)))]
   # params <- params[bar_day =="3 days" & tp =="0.1" & med_num == 1]
@@ -276,50 +293,34 @@ for (i in 1:length(data_list)){
     if(nrow(all_batches) != 0){
       high_tmp <- tmp[, high]
       low_tmp <- tmp[, high]
-      
       longg <- all_batches[position == "long"]
-      
-      
       # TP
       rr_long_tp <- function(exit,bar){
         r <- which(high_tmp[bar:length(high_tmp)]>exit)[1]+bar
         return(r)
       }
-      
-      
-      
       long_exit <- mapply(rr_long_tp, longg[, exits], longg[, bar_entered])
-      
       longg[, interval_exit_tp := tmp[long_exit, interval]]
       longg[, bar_exited_tp := long_exit]
-      
-      
       final_grid <- copy(longg)
-      
       final_grid[is.na(bar_exited_tp), bar_exited_tp:= nrow(tmp)]
       final_grid[!is.na(interval_exit_tp), price_exits := exits]
       final_grid[is.na(interval_exit_tp), price_exits := tmp$close[nrow(tmp)]]
       final_grid[is.na(interval_exit_tp), interval_exit_tp := tmp$interval[nrow(tmp)]]
-      
       final_grid[, percent := ((price_exits - grid)/grid) - 2*0.0025]
       final_grid[, usd_res := percent*bet]
       final_grid[, trade_pos_outcome := ifelse(percent >0, T, F)]
-      
       dd <- merge(final_grid[, list( entr = sum(bet)), by =interval_enter], final_grid[, list(exit=sum(bet+usd_res)), by =interval_exit_tp], by.x = "interval_enter", by.y ="interval_exit_tp", all = T)
       dd[is.na(entr), entr:= 0]
       dd[is.na(exit), exit:= 0]
       dd[, cumsum_entries:= cumsum(entr)]
       dd[, cumsum_exit:= cumsum(exit)]
-      
       dd[, funds_pair:= -cumsum_entries+cumsum_exit]
       dd[, pair := unique(tmp$pair)]
       dd <- cbind(dd, params[h,])
-      # dd <- any(dd$funds_pair<(-funds))
       fund_list_param[[h]] <- dd
-      
       param_result <- copy(params[h,])
       param_result[, aver_percent := mean(final_grid$percent)]
-      
       param_result[, total_bet := sum(final_grid$bet)]
       param_result[, quote_res := sum(final_grid$usd_res)]
       param_result[, total_percent := quote_res/funds]
@@ -333,14 +334,10 @@ for (i in 1:length(data_list)){
       param_result[, hodl := (tail(tmp[, close], 1)-head(tmp[, close], 1))/head(tmp[, close], 1)]
       # param_result[, exceeded_funds := dd]
       results[[h]] <- param_result
-      # print(param_result)
+      print(param_result)
       print(paste0("i is: ", i, " and h is: ", h))
       print(param_result)
     }
-    
-    
-    
-    
   }  
   
   # Pair operation end
@@ -349,35 +346,153 @@ for (i in 1:length(data_list)){
   print(tmp_res)
   pair_results[[i]] <- tmp_res
   fund_list_pair[[i]] <- fund_list_param
-  
 }
+end_time <- Sys.time()
+total_time <- start_time-end_time
+Time difference of -6.264234 mins
 
-  
-})
-# htmlwidgets::saveWidget(p, "profile.html")  
-fund_list_pair <- bind_rows(lapply(fund_list_pair, bind_rows))
-# fund_list_pair <- lapply(fund_list_pair, as.data.frame)
-# fund_list_pair <- rbindlist(fund_list_pair)
-fund_list_pair[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
+funds_analysis <- bind_rows(lapply(fund_list_pair, bind_rows))
+funds_analysis[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
+exceeded_funds_bool <- funds_analysis[, list(sum_funds=sum(funds_pair)), by = list(interval_enter, param_concatenated)]
+exceeded_funds_num <- funds_analysis[, list(sum_funds=sum(funds_pair)), by = list(interval_enter, param_concatenated)][, list(overhead = min(sum_funds)), by = param_concatenated]
+exceeded_funds_bool[, exceeded_funds := any(sum_funds<(-funds)), by = param_concatenated]
+exceeded_funds_bool <- unique(exceeded_funds_bool[, .(param_concatenated, exceeded_funds)])
 
-data_f <- fund_list_pair[,  sum(funds_pair), by = .(interval_enter, param_concatenated)]
-setorder(data_f, interval_enter, param_concatenated)
-data_f[, exceeded_funds := any(V1<(-funds)), by = param_concatenated]
-data_f <- unique(data_f[, .(param_concatenated, exceeded_funds)])
-# ggplot(data_f, aes(x = interval_enter, y=V1))+
-#   geom_line()+
-#   geom_hline(yintercept = c(funds, -funds))
-# rm(fund_list_pair)
-# rm(data_f)
+
+
 test<- rbindlist(pair_results, fill = T)
 test[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
-test <- merge(test, data_f)
-metrics <- test[exceeded_funds==F, list(sum_bet = sum(total_bet),
+metrics <- test[, list(sum_bet = sum(total_bet),
                        sum_quote = sum(quote_res),
                        mean_hodl = median(hodl)), by=.(param_concatenated)]
 metrics[, percent:= sum_quote/funds]
+metrics <- merge(metrics, exceeded_funds_bool, all.x = T)
+metrics <- merge(metrics, exceeded_funds_num, all.x = T)
+View(metrics)
 
-save(metrics, file="metrics.Rdata")
+
+
+
+# very big --
+# fund_list_pair1 <- bind_rows(lapply(fund_list_pair[1:25], bind_rows))
+# fund_list_pair1[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
+# 
+# fund_list_pair2 <- bind_rows(lapply(fund_list_pair[26:50], bind_rows))
+# fund_list_pair2[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
+# 
+# fund_list_pair3 <- bind_rows(lapply(fund_list_pair[51:75], bind_rows))
+# fund_list_pair3[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
+# 
+# fund_list_pair4 <- bind_rows(lapply(fund_list_pair[76:100], bind_rows))
+# fund_list_pair4[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
+# 
+# fund_list_pair5 <- bind_rows(lapply(fund_list_pair[101:125], bind_rows))
+# fund_list_pair5[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
+# 
+# fund_list_pair6 <- bind_rows(lapply(fund_list_pair[126:150], bind_rows))
+# fund_list_pair6[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
+# 
+# fund_list_pair7 <- bind_rows(lapply(fund_list_pair[151:175], bind_rows))
+# fund_list_pair7[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
+# 
+# fund_list_pair8 <- bind_rows(lapply(fund_list_pair[176:190], bind_rows))
+# fund_list_pair8[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
+# 
+# fund_list_pair9 <- bind_rows(lapply(fund_list_pair[191:205], bind_rows))
+# fund_list_pair9[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
+
+
+
+# fund_list_pair1 <- fund_list_pair1[,  sum(funds_pair), by = .(param_concatenated, interval_enter)]
+# fund_list_pair2 <- fund_list_pair2[,  sum(funds_pair), by = .(param_concatenated, interval_enter)]
+# fund_list_pair3 <- fund_list_pair3[,  sum(funds_pair), by = .(param_concatenated, interval_enter)]
+# fund_list_pair4 <- fund_list_pair4[,  sum(funds_pair), by = .(param_concatenated, interval_enter)]
+# fund_list_pair5 <- fund_list_pair5[,  sum(funds_pair), by = .(param_concatenated, interval_enter)]
+# fund_list_pair6 <- fund_list_pair6[,  sum(funds_pair), by = .(param_concatenated, interval_enter)]
+# fund_list_pair7 <- fund_list_pair7[,  sum(funds_pair), by = .(param_concatenated, interval_enter)]
+# fund_list_pair8 <- fund_list_pair8[,  sum(funds_pair), by = .(param_concatenated, interval_enter)]
+# fund_list_pair9 <- fund_list_pair9[,  sum(funds_pair), by = .(param_concatenated, interval_enter)]
+
+# fund_list_pair <- rbind(fund_list_pair1,fund_list_pair2,fund_list_pair3,fund_list_pair4,
+#                         fund_list_pair5,
+#                         fund_list_pair6,
+#                         fund_list_pair7,
+#                         fund_list_pair8,fund_list_pair9)
+
+# fund_list_pair <- fund_list_pair[,  sum(V1), by = .(param_concatenated, interval_enter)]
+# 168 hours_0.2_5_0.05_0.4_0.1
+# View(fund_list_pair[param_concatenated == "168 hours_0.2_5_0.05_0.4_0.1"])
+
+
+
+# fund_list_pair[, exceeded_funds := any(V1<(-funds)), by = param_concatenated]
+# fund_list_pair <- unique(fund_list_pair[, .(param_concatenated, exceeded_funds)])
+# 
+# test<- rbindlist(pair_results, fill = T)
+# test[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
+# metrics <- test[, list(sum_bet = sum(total_bet),
+#                        sum_quote = sum(quote_res),
+#                        mean_hodl = median(hodl)), by=.(param_concatenated)]
+# metrics[, percent:= sum_quote/funds]
+# metrics <- merge(metrics, fund_list_pair, all.x = T)
+# save(metrics, file="super_big_one.Rdata")
+# View(metrics)
+# ----
+
+
+# FIXXXX
+# test<- rbindlist(pair_results, fill = T)
+# test[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
+# metrics_pair <- test[, list(sum_bet = sum(total_bet),
+#                        sum_quote = sum(quote_res),
+#                        mean_hodl = median(hodl)), by=.(param_concatenated, pair)]
+# metrics_pair[, percent:= sum_quote/funds]
+# 
+# fund_list_pair <- merge(fund_list_pair, metrics_pair, by.x = c("param_concatenated", "pair"), by.y = c("param_concatenated", "pair"), all.x = T)
+# 
+# # Test
+# i <- 205
+# tmp3 <- list()
+# pp <- unique(fund_list_pair$pair)
+# for(i in 1:length(pp)){
+#   sel_pp <- pp[1:i]
+#   tmp1 <- copy(fund_list_pair)
+#   
+#   tmp1 <- tmp1[pair %in% sel_pp]
+#   pair_returns <- unique(tmp1[, .(param_concatenated, pair, percent)])
+#   param_returns <- pair_returns[, list(percent = sum(percent)), by = param_concatenated]
+#   tmp2 <- tmp1[,  sum(funds_pair), by = .(param_concatenated, interval_enter)]
+#   
+#   tmp2[, exceeded_funds := any(V1<(-funds)), by = param_concatenated]
+#   tmp2 <- unique(tmp2[, .(param_concatenated, exceeded_funds)])
+#   tmp2[, n := length(sel_pp)]
+#   tmp2 <- merge(tmp2, param_returns, all.x = T)
+#   tmp3[[i]] <- tmp2
+# }
+# tmp4 <- rbindlist(tmp3)
+
+
+
+# setorder(tmp4, -param_concatenated, n)
+# tmp5 <- tmp4[exceeded_funds == FALSE]
+# tmp6 <- tmp5[, list(max_pairs=max(n)),by = param_concatenated]
+# tmp6 <- merge(tmp6, unique(tmp5[, .(param_concatenated, n, percent)]), by.x = c("param_concatenated", "max_pairs"), by.y = c("param_concatenated", "n"), all.x = T)
+# 
+# data_f <- fund_list_pair[,  sum(funds_pair), by = .(interval_enter, param_concatenated)]
+# setorder(data_f, interval_enter, param_concatenated)
+# data_f[, exceeded_funds := any(V1<(-funds)), by = param_concatenated]
+# data_f <- unique(data_f[, .(param_concatenated, exceeded_funds)])
+# test<- rbindlist(pair_results, fill = T)
+# test[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
+# test <- merge(test, data_f)
+metrics <- test[, list(sum_bet = sum(total_bet),
+                       sum_quote = sum(quote_res),
+                       mean_hodl = median(hodl),
+                       exceeded_funds = unique(exceeded_funds)), by=.(param_concatenated)]
+metrics[, percent:= sum_quote/funds]
+metrics <- merge(metrics, tmp6, by.x = "param_concatenated", by.y = "param_concatenated", all.x =T)
+# metrics <- merge(metrics, unique(tmp_imp[, .(param_concatenated, n,sum_percent)]), by.x = c("param_concatenated", "max_pairs"), by.y = c("param_concatenated", "n"), all.x =T)
+save(metrics, file="metrics_maxpairs.Rdata")
 
 
 metrics_pair <- test[, list(sum_bet = sum(total_bet),
@@ -405,6 +520,14 @@ metrics_pair[percent>mean_hodl, .N]
 #     base = x$base,
 #     quote = x$quote,
 #     aclass_base = x$aclass_base,
+
+metrics <- test[, list(sum_bet = sum(total_bet),
+                       sum_quote = sum(quote_res),
+                       mean_hodl = median(hodl)), by=.(param_concatenated)]
+
+metrics[, percent:= sum_quote/funds]
+metrics[percent>mean_hodl, .N]
+
 #     ordermin = x$ordermin,
 #     costmin = x$costmin,
 #     stringsAsFactors = FALSE

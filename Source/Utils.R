@@ -675,3 +675,75 @@ split_dataframe <- function(df, n_splits) {
   return(splits)
 }
 
+
+get_n_hist_orders <- function(n){
+  key = API_Key
+  secret = API_Sign
+  offset <- 0
+  url = "https://api.kraken.com/0/private/ClosedOrders"
+  sleep <- 3
+  decrease <- -0.5
+  increase <- 2
+  counter <- 0
+  counter_actual <- 0
+  orders_raw <- list();i<-1
+  while (offset < n) {
+    start.time <- Sys.time()
+    orders_raw[[i]] <- get_trade_history(url, key, secret, offset)
+    offset <- offset + 50
+    i <- i+1
+    counter <- counter+increase+decrease*sleep
+    Sys.sleep(sleep)
+    end.time <- Sys.time()
+    time.taken <- end.time - start.time
+    counter_actual <- counter_actual+increase+decrease*time.taken
+    print(paste0("Offset at ", offset))
+    print(paste0("Theoretical rate limit at ", counter, " with max=20"))
+    print(paste0("Actual rate limit at ", counter_actual, " with max=20"))
+  }
+  myls <- list()
+  df_list <- list()
+  for(k in 1:length(orders_raw)){
+    for (i in 1:length(orders_raw[[k]]$result$closed)){
+      dataframe <- as.data.frame(rbind(unlist(orders_raw[[k]]$result$closed[i][[1]])))
+      dataframe$order_id <-  names(orders_raw[[k]]$result$closed[i])
+      myls[[i]] <- dataframe
+    }
+    df_list[[k]] <- rbindlist(myls, fill =T)
+  }
+  all_orders_cache <- rbindlist(df_list, fill = T)
+  return(all_orders_cache)
+}
+
+asset_info_ticker <- function(){
+  url <- paste0("https://api.kraken.com/0/public/AssetPairs")
+  tb <- jsonlite::fromJSON(url)
+  
+  # Extract and combine into a dataframe
+  df <- do.call(rbind, lapply(tb$result, function(x) {
+    data.frame(
+      altname = x$altname,
+      base = x$base,
+      quote = x$quote,
+      aclass_base = x$aclass_base,
+      ordermin = x$ordermin,
+      costmin = x$costmin,
+      lot_decimals = x$lot_decimals,
+      pair_decimals = x$pair_decimals,
+      stringsAsFactors = FALSE
+    )
+  }))
+  rownames(df) <- NULL
+  df$api_name <- names(tb$result)
+  url <- paste0("https://api.kraken.com/0/public/Ticker")
+  tb <- jsonlite::fromJSON(url)
+  price_info <- data.table(PAIR = names(tb$result),
+                           PRICE = as.numeric(lapply(lapply(tb$result, "[[", 3), "[", 1)))
+  volume_info <- data.table(PAIR = names(tb$result),
+                            VOLUME_24hours = as.numeric(lapply(lapply(tb$result, "[[", 4), "[", 2)))
+  df <- merge(df,price_info, by.x = "api_name", by.y = "PAIR", all.x = T)
+  df <- merge(df,volume_info, by.x = "api_name", by.y = "PAIR", all.x = T)
+  setDT(df)
+  df[, USD_amount := PRICE* VOLUME_24hours]
+  return(df)
+}
