@@ -9,7 +9,7 @@ sapply(files.sources, source)
 
 # Bot parameters
 options(scipen = 999)
-n_pairs <- 20
+n_pairs <- 130
 bet <- 5
 bar <- 168
 tp <- 0.15
