@@ -1,12 +1,17 @@
-# Preamble ---------------------------------------------------------------------
-# screen -S pullingETH R
+rm(list=ls())
+gc()
+# Source functions
+library(profvis)
+library(runner)
+library(Rfast)
+path_source <- "Source"
+files.sources = list.files(path_source, full.names = T)
+sapply(files.sources, source)
+library(stringr)
 
-rm(list = ls())
-library("stringr")
-library("httr")
-# .rs.restartR()
 url <- paste0("https://api.kraken.com/0/public/AssetPairs")
 tb <- jsonlite::fromJSON(url)
+
 
 all_pairs <- unlist(lapply(lapply(tb$result, "[[", "altname"), function(x) length(x)>0))
 all_pairs <- names(all_pairs)
@@ -44,3 +49,6 @@ for(i in 88:length(all_pairs)){
   
 }
 
+margin_pairs <- unlist(lapply(lapply(tb$result, "[[", "leverage_buy"), function(x) length(x)>0))
+margin_pairs <- names(margin_pairs[margin_pairs == T])
+margin_pairs <- margin_pairs[str_sub(margin_pairs,start = -3) == "USD"]

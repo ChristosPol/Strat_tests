@@ -4,151 +4,36 @@ gc()
 funds <- 10000
 bet <- 5
 
-library(profvis)
+library(tidyverse)
+library(lubridate)
 path_source <- "Source"
 files.sources = list.files(path_source, full.names = T)
 sapply(files.sources, source)
 
-# Path to save results
-data_path <- "Data"
-data <- list.files(data_path, full.names = T)
-names <- list.files(data_path, full.names = F)
-
-# selected <- sample(names, 10,replace = F)
-
-
-# idx <- which(names %in%selected)
-
-# data <- data[idx]
-# names <- names[idx]
-i <- 1
-data_list <- list()
-for (i in 1:length(data)){
-  pair <- names[i]
-  pair_data_results <- paste(data_path, pair, sep ="/")
-  ticks <- c(60)
-  units <- c("minutes")
-  intervals <- paste(ticks, units, sep = " ")
-  df <- trades_to_OHLC(pair = pair,
-                       interval = intervals,
-                       from_date = "2022-01-01",
-                       to_date = "2024-12-15",
-                       date_subset = F)
-  tmp <- df[[1]]
-  tmp[, date:=as.Date(interval)]
-  tmp[, pair := pair]
-
-
-  
-  
-  data_list[[i]] <- tmp
-  print(i)
-  
+geom_brown <- function(n, init_price, mu, sigma, dt){
+  time_steps <- 1:n
+  epsilon <- rnorm(n, mean = 0, sd = 1)
+  log_returns <- (mu - 0.5 * sigma^2) * dt + sigma * sqrt(dt) * epsilon
+  prices <- init_price * cumprod(exp(log_returns))
+  crypto_data <- data.frame(
+    Time = seq.POSIXt(from = Sys.time(), by = "min", length.out = n),
+    Price = prices
+  )
+  ohlc_data <- crypto_data %>%
+    mutate(TimeInterval = floor_date(Time, unit = "60 minutes")) %>%
+    group_by(TimeInterval) %>%
+    summarise(
+      Open = first(Price),
+      High = max(Price),
+      Low = min(Price),
+      Close = last(Price)
+    ) %>%
+    ungroup()
+  setDT(ohlc_data)
+  setnames(ohlc_data, c("interval","open","high", "low", "close"))
+  ohlc_data[, pair := paste(sample(all_chars, str_len, replace = TRUE), collapse = "")]
+  return(ohlc_data)
 }
-gc()
-data_list_bk <- copy(data_list)
-
-# RESTART HERE
-names <- list.files(data_path, full.names = F)
-
-data_list <- copy(data_list_bk)
-# data <- data[idx]
-# names <- names[idx]
-# get all pairs equal dates!
-# Need to calculate bet size of everything together
-g_d <- function(x) {
-  mi <- as.Date(min(x$interval))
-  ma <- as.Date(max(x$interval))
-  return(c(mi, ma))
-}
-
-periods <- lapply(data_list, function(x) g_d(x))
-periods <- data.table(left=as.Date(unlist(lapply(periods, "[[", 1))), right= as.Date(unlist(lapply(periods, "[[", 2))))
-setDT(periods)
-periods[, pair := names]
-periods[, pair:as.factor(pair)]
-
-
-ggplot(periods, aes(y = pair)) +
-  geom_segment(aes(x = left, xend = right, y = pair, yend = pair, color = pair), size = 1.5) +
-  theme_minimal() +
-  theme(axis.text.y = element_text(size = 12), legend.position = "none")
-
-
-# Define which pairs have the same time period
-rand_left <- sample(seq(min(periods$left),max(periods$left), "days"), 1)
-left_date <- rand_left
-right_date <- as.Date(left_date)+ days(180)
-left_date <- "2021-01-01"
-right_date <- "2024-12-01"
-# 24 hours_0.3_5
-
-calendar_times <- function(x){
-  times <- data.frame(interval_updated = seq(min(x$interval), max(x$interval), "hours"), flag =1)
-  x <- merge(times, x, by.x="interval_updated", by.y="interval", all.x = T)
-  x$high <- na.locf(x$high)
-  x$low <- na.locf(x$low)
-  x$close <- na.locf(x$close)
-  x$open <- na.locf(x$open)
-  x$volume[is.na(x$volume)] <- 0
-  x$pair  <- na.locf(x$pair)
-  x$date <- as.Date(x$interval_updated)
-  colnames(x)[which(colnames(x)== "interval_updated")] <- "interval"
-  setDT(x)
-  return(x)
-}
-
-# Function to filter and extract exact period
-filter_and_extract <- function(dt_list, left_date, right_date) {
-  dt_list_filtered <- lapply(dt_list, function(dt) {
-    dt_min <- min(dt$date)
-    dt_max <- max(dt$date)
-    if (left_date >= dt_min && right_date <= dt_max) {
-      # Subset to the exact target period
-      extracted_data <- dt[date >= left_date & date <= right_date]
-      # Return only if the subset is not empty
-      if (nrow(extracted_data) > 0) {
-        return(extracted_data)
-      }
-    }
-    # Exclude if the period is not covered
-    return(NULL)
-  })
-  # Remove NULL elements
-  dt_list_filtered <- dt_list_filtered[!sapply(dt_list_filtered, is.null)]
-  return(dt_list_filtered)
-}
-
-# Apply the function
-data_list <- filter_and_extract(data_list, left_date, right_date)
-data_list <- lapply(data_list, calendar_times)
-
-
-names <- unique(unlist(lapply(data_list, "[[", "pair")))
-periods <- lapply(data_list, function(x) g_d(x))
-periods <- data.table(left=as.Date(unlist(lapply(periods, "[[", 1))), right= as.Date(unlist(lapply(periods, "[[", 2))))
-setDT(periods)
-periods[, pair := names]
-periods[, pair:as.factor(pair)]
-ggplot(periods, aes(y = pair)) +
-  geom_segment(aes(x = left, xend = right, y = pair, yend = pair, color = pair), size = 1.5) +
-  # geom_text(aes(x = left, label = pair), hjust = -0.1, size = 4, color = "black") +
-  theme_minimal() +
-  theme(axis.text.y = element_text(size = 12), legend.position = "none")
-
-
-selected <- sample(names, 30,replace = F)
-selected <- c("XXRPZUSD", "XXLMZUSD", "XXBTZUSD", "XLTCZUSD", "XETHZUSD"
-              , "XETCZUSD", "XDGUSD", "SUSHIUSD", "SOLUSD", "SHIBUSD"
-              , "MKRUSD", "MATICUSD", "LINKUSD", "INJUSD", "GNOUSD"
-              , "ENJUSD", "DOTUSD", "BCHUSD", "BANDUSD", "AVAXUSD", "ATOMUSD"
-              , "ALGOUSD", "ADAUSD", "AAVEUSD")
-
-idx <- which(names %in%selected)
-data <- data[idx]
-names <- names[idx]
-data_list <- data_list[idx]
-
 
 # For trade Ids
 all_chars <- c(LETTERS, 0:9)
@@ -158,34 +43,39 @@ fund_list_pair <- list()
 pair_results <- list()
 # Loop through all pairs
 
-# grid <-  -1*seq(0.05, 0.3, 0.05)
-# grid <-  -1*seq(0.01, 0.2, 0.025)
-# cover_funds <- length(grid)*length(data_list)*bet
-# stopifnot(cover_funds<funds)
-# p <- profvis({
 
+candles(geom_brown(n=10000, init_price = 1000, mu = 0.00005, sigma = 0.01, dt=1))
+candles(geom_brown(n=10000, init_price = 1000, mu = -0.00005, sigma = 0.01, dt=1))
+candles(geom_brown(n=10000, init_price = 1000, mu = 0, sigma = 0.01, dt=1))
+data_list1 <- lapply(1:100, function(x)geom_brown(n=100000, init_price = 1000, mu = 0.00005, sigma = 0.01, dt=1))
+data_list2 <- lapply(1:100, function(x)geom_brown(n=100000, init_price = 1000, mu = 0.00005, sigma = 0.01, dt=1))
+data_list3 <- lapply(1:100, function(x)geom_brown(n=100000, init_price = 1000, mu = 0, sigma = 0.01, dt=1))
+
+data_list<- append(data_list1,data_list2)
+data_list <- append(data_list, data_list3)
+
+
+grid <-  -1*seq(0.01, 0.3, 0.025)
+# grid <-  -1*seq(0.01, 0.2, 0.025)
+cover_funds <- length(grid)*length(data_list)*bet
+# stopifnot(cover_funds<funds)
+names
+i <- 1
+unlist(lapply(data_list, nrow))
 for (i in 1:length(data_list)){
-# for (i in 120:160){
+  # for (i in 120:160){
   tmp <- copy(data_list[[i]])
   
   look_back <- data.table(bar=c(floor(nrow(tmp)/(24)),
-                                floor(nrow(tmp)/(48)), floor(nrow(tmp)/(72))),flag=1)
-  # 24 hours_0.08_5_0.01_0.4_0.01
+                                floor(nrow(tmp)/(48)), floor(nrow(tmp)/(72))
+                                , floor(nrow(tmp)/(168))),flag=1)
   # look_back <- data.table(bar=c(floor(nrow(tmp)/(24)) ),flag=1)
-  # TP <- data.table(tp=c(0.05,0.08,0.1, 0.15, 0.2, 0.3),flag=1)
-  TP <- data.table(tp = c(0.08),flag=1)
+  TP <- data.table(tp=c(0.02,0.05,0.1, 0.15, 0.2, 0.3),flag=1)
+  # TP <- data.table(tp=c(0.05),flag=1)
   median_number <- data.table(med_num=c(1,2,4,5,3),flag=1)
-  # median_number <- data.table(med_num=c(5),flag=1)
-  # start_point <- data.table(start_point = c(0.01,0.025, 0.05),flag=1)
-  # end_point <- data.table(end_point = c(0.1,0.2, 0.3, 0.4),flag=1)
-  # step <- data.table(step = c(0.01,0.025, 0.05),flag=1)
-  start_point <- data.table(start_point = c(0.01),flag=1)
-  end_point <- data.table(end_point = c(0.04),flag=1)
-  step <- data.table(step = c(0.04),flag=1)
-  params <- left_join(look_back,TP)%>%left_join(median_number)%>%
-    left_join(start_point)%>%
-    left_join(end_point)%>%
-    left_join(step)
+  # median_number <- data.table(med_num=c(4),flag=1)
+  params <- left_join(look_back,TP)%>%left_join(median_number)
+  params[bar == floor(nrow(tmp)/(48)), bar_day := "48 hours"]
   params[bar == floor(nrow(tmp)/(24)), bar_day := "24 hours"]
   params[bar == floor(nrow(tmp)/(48)), bar_day := "48 hours"]
   params[bar == floor(nrow(tmp)/(72)), bar_day := "72 hours"]
@@ -198,12 +88,11 @@ for (i in 1:length(data_list)){
   
   # 40 days_0.3_1
   
-  
   # pair operation start
   results <- list()
   h <- 1
   for (h in 1:nrow(params)){
-    grid <-  -1*seq(params$start_point[h], params$end_point[h], params$step[h])
+    
     list_df <- split_dataframe(tmp, params$bar[h])
     offset <- unlist(lapply(list_df, nrow))
     offset[1] <- 1
@@ -228,7 +117,8 @@ for (i in 1:length(data_list)){
                               status_enter="open",
                               status_exit = "open")
       
-      long_grid[, `:=`(batch=s, 
+      long_grid[, `:=`(trade_id = replicate(nrow(long_grid), paste(sample(all_chars, str_len, replace = TRUE), collapse = "")),
+                       batch=s, 
                        batch_offset=offset[s],
                        interval_enter = as.POSIXct(rep(NA, nrow(long_grid))),
                        interval_exit_tp = as.POSIXct(rep(NA, nrow(long_grid))),
@@ -314,7 +204,6 @@ for (i in 1:length(data_list)){
       dd[, funds_pair:= -cumsum_entries+cumsum_exit]
       dd[, pair := unique(tmp$pair)]
       dd <- cbind(dd, params[h,])
-      # dd <- any(dd$funds_pair<(-funds))
       fund_list_param[[h]] <- dd
       
       param_result <- copy(params[h,])
@@ -331,18 +220,14 @@ for (i in 1:length(data_list)){
       param_result[, biggest_loss_usd := min(final_grid$usd_res)]
       param_result[, biggest_loss_per := min(final_grid$percent)]
       param_result[, hodl := (tail(tmp[, close], 1)-head(tmp[, close], 1))/head(tmp[, close], 1)]
-      # param_result[, exceeded_funds := dd]
+      
       results[[h]] <- param_result
-      # print(param_result)
-      print(paste0("i is: ", i, " and h is: ", h))
-      print(param_result)
     }
     
     
     
     
   }  
-  
   # Pair operation end
   tmp_res <-  rbindlist(results)
   tmp_res[, pair := unique(tmp$pair)]
@@ -351,38 +236,31 @@ for (i in 1:length(data_list)){
   fund_list_pair[[i]] <- fund_list_param
   
 }
+fund_list_pair <- lapply(fund_list_pair, as.data.frame)
+fund_list_pair <- rbindlist(fund_list_pair)
 
-  
-})
-# htmlwidgets::saveWidget(p, "profile.html")  
-fund_list_pair <- bind_rows(lapply(fund_list_pair, bind_rows))
-# fund_list_pair <- lapply(fund_list_pair, as.data.frame)
-# fund_list_pair <- rbindlist(fund_list_pair)
-fund_list_pair[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
 
-data_f <- fund_list_pair[,  sum(funds_pair), by = .(interval_enter, param_concatenated)]
-setorder(data_f, interval_enter, param_concatenated)
-data_f[, exceeded_funds := any(V1<(-funds)), by = param_concatenated]
-data_f <- unique(data_f[, .(param_concatenated, exceeded_funds)])
-# ggplot(data_f, aes(x = interval_enter, y=V1))+
-#   geom_line()+
-#   geom_hline(yintercept = c(funds, -funds))
-# rm(fund_list_pair)
-# rm(data_f)
+data_f <- fund_list_pair[,  sum(funds_pair), by = interval_enter]
+setorder(data_f, interval_enter)
+
+ggplot(data_f, aes(x = interval_enter, y=V1))+
+  geom_line()+
+  geom_hline(yintercept = c(funds, -funds))
+rm(fund_list_pair)
+rm(data_f)
 test<- rbindlist(pair_results, fill = T)
-test[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
-test <- merge(test, data_f)
-metrics <- test[exceeded_funds==F, list(sum_bet = sum(total_bet),
+test[, param_concatenated := paste(bar_day, tp, med_num, sep="_"), by =.I]
+
+
+metrics <- test[, list(sum_bet = sum(total_bet),
                        sum_quote = sum(quote_res),
                        mean_hodl = median(hodl)), by=.(param_concatenated)]
 metrics[, percent:= sum_quote/funds]
-
-save(metrics, file="metrics.Rdata")
-
+metrics
 
 metrics_pair <- test[, list(sum_bet = sum(total_bet),
-                       sum_quote = sum(quote_res),
-                       mean_hodl = median(hodl)), by=.(pair)]
+                            sum_quote = sum(quote_res),
+                            mean_hodl = median(hodl)), by=.(pair)]
 metrics_pair[, percent:= sum_quote/funds]
 metrics_pair[percent>mean_hodl, .N]
 
@@ -483,6 +361,41 @@ metrics_pair[percent>mean_hodl, .N]
 # 
 
 # 
+library(tidyverse)
+library(lubridate)
+n <- 1000
+init_price <- 20000
+mu <- -0.0002
+sigma <- 0.02
+dt <- 1
+
+geom_brown <- function(n, init_price, mu, sigma, dt){
+  time_steps <- 1:n
+  epsilon <- rnorm(n, mean = 0, sd = 1)
+  log_returns <- (mu - 0.5 * sigma^2) * dt + sigma * sqrt(dt) * epsilon
+  prices <- init_price * cumprod(exp(log_returns))
+  crypto_data <- data.frame(
+    Time = seq.POSIXt(from = Sys.time(), by = "min", length.out = n),
+    Price = prices
+  )
+  ohlc_data <- crypto_data %>%
+    mutate(TimeInterval = floor_date(Time, unit = "60 minutes")) %>%
+    group_by(TimeInterval) %>%
+    summarise(
+      Open = first(Price),
+      High = max(Price),
+      Low = min(Price),
+      Close = last(Price)
+    ) %>%
+    ungroup()
+  setDT(ohlc_data)
+  setnames(ohlc_data, c("interval","open","high", "low", "close"))
+  ohlc_data[, pair := paste(sample(all_chars, str_len, replace = TRUE), collapse = "")]
+  return(ohlc_data)
+}
+
+candles(geom_brown(n=100000, init_price = 1000, mu = 0.000001, sigma = 0.001, dt=1))
+data_list <- lapply(1:100, function(x)geom_brown(n=100000, init_price = 1000, mu = 0.000001, sigma = 0.001, dt=1))
 
 # 
 # # Aggregating to OHLC (e.g., every 10 minutes)
@@ -563,9 +476,9 @@ metrics_pair[percent>mean_hodl, .N]
 # 
 # 
 # 
-# candles(tmp)+
-#   geom_point(data=final_grid[!is.na(interval_enter) & position == "long"], aes(x=interval_enter, y=grid), fill="lightblue3",colour="black", shape =24, size=2)+
-#   geom_point(data=final_grid[!is.na(interval_exit_tp) & position == "long" ], aes(x=interval_exit_tp, y=price_exits), fill="darkorchid1", colour="black",shape =25, size=2)
+candles(tmp)+
+  geom_point(data=final_grid[!is.na(interval_enter) & position == "long"], aes(x=interval_enter, y=grid), fill="lightblue3",colour="black", shape =24, size=2)+
+  geom_point(data=final_grid[!is.na(interval_exit_tp) & position == "long" ], aes(x=interval_exit_tp, y=price_exits), fill="darkorchid1", colour="black",shape =25, size=2)
 #   geom_point(data=final_grid[!is.na(interval_enter) & position == "short"], aes(x=interval_enter, y=grid), fill="darkorchid1", colour="black", shape =25, size=2)+
 #   geom_point(data=final_grid[!is.na(interval_exited) & position == "short"], aes(x=interval_exited, y=exit_price), fill="darkorchid1", colour="black",shape =24, size=2)
 # # param_result
