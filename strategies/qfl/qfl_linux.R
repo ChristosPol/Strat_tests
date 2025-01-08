@@ -4,7 +4,7 @@ gc()
 funds <- 10000
 bet <- 5
 
-library(profvis)
+
 path_source <- "Source"
 files.sources = list.files(path_source, full.names = T)
 sapply(files.sources, source)
@@ -14,13 +14,6 @@ data_path <- "Data"
 data <- list.files(data_path, full.names = T)
 names <- list.files(data_path, full.names = F)
 
-# selected <- sample(names, 10,replace = F)
-
-
-# idx <- which(names %in%selected)
-
-# data <- data[idx]
-# names <- names[idx]
 i <- 1
 data_list <- list()
 for (i in 1:length(data)){
@@ -79,7 +72,7 @@ ggplot(periods, aes(y = pair)) +
 rand_left <- sample(seq(min(periods$left),max(periods$left), "days"), 1)
 left_date <- rand_left
 right_date <- as.Date(left_date)+ days(180)
-left_date <- "2021-01-01"
+left_date <- "2024-01-01"
 right_date <- "2024-12-01"
 # 24 hours_0.3_5
 
@@ -137,7 +130,7 @@ ggplot(periods, aes(y = pair)) +
   theme(axis.text.y = element_text(size = 12), legend.position = "none")
 
 
-selected <- sample(names, 30,replace = F)
+selected <- sample(names, 80,replace = F)
 selected <- c("XXRPZUSD", "XXLMZUSD", "XXBTZUSD", "XLTCZUSD", "XETHZUSD"
               , "XETCZUSD", "XDGUSD", "SUSHIUSD", "SOLUSD", "SHIBUSD"
               , "MKRUSD", "MATICUSD", "LINKUSD", "INJUSD", "GNOUSD"
@@ -168,20 +161,20 @@ for (i in 1:length(data_list)){
   # for (i in 120:160){
   tmp <- copy(data_list[[i]])
   
-  look_back <- data.table(bar=c(floor(nrow(tmp)/(24)),
+  look_back <- data.table(bar=c(floor(nrow(tmp)/(24)),floor(nrow(tmp)/(168)),floor(nrow(tmp)/(336)),
                                 floor(nrow(tmp)/(48)), floor(nrow(tmp)/(72))),flag=1)
   # 24 hours_0.08_5_0.01_0.4_0.01
   # look_back <- data.table(bar=c(floor(nrow(tmp)/(24)) ),flag=1)
-  # TP <- data.table(tp=c(0.05,0.08,0.1, 0.15, 0.2, 0.3),flag=1)
-  TP <- data.table(tp = c(0.08),flag=1)
-  median_number <- data.table(med_num=c(1,2,4,5,3),flag=1)
-  # median_number <- data.table(med_num=c(5),flag=1)
-  # start_point <- data.table(start_point = c(0.01,0.025, 0.05),flag=1)
-  # end_point <- data.table(end_point = c(0.1,0.2, 0.3, 0.4),flag=1)
-  # step <- data.table(step = c(0.01,0.025, 0.05),flag=1)
-  start_point <- data.table(start_point = c(0.01),flag=1)
-  end_point <- data.table(end_point = c(0.04),flag=1)
-  step <- data.table(step = c(0.04),flag=1)
+  TP <- data.table(tp=c(0.05,0.08,0.1, 0.15),flag=1)
+  # TP <- data.table(tp = c(0.08),flag=1)
+  # median_number <- data.table(med_num=c(1,2,4,5,3),flag=1)
+  median_number <- data.table(med_num=c(5),flag=1)
+  start_point <- data.table(start_point = c(0.01,0.025, 0.05),flag=1)
+  end_point <- data.table(end_point = c(0.3),flag=1)
+  step <- data.table(step = c(0.05),flag=1)
+  # start_point <- data.table(start_point = c(0.01),flag=1)
+  # end_point <- data.table(end_point = c(0.04),flag=1)
+  # step <- data.table(step = c(0.04),flag=1)
   params <- left_join(look_back,TP)%>%left_join(median_number)%>%
     left_join(start_point)%>%
     left_join(end_point)%>%
@@ -190,10 +183,10 @@ for (i in 1:length(data_list)){
   params[bar == floor(nrow(tmp)/(48)), bar_day := "48 hours"]
   params[bar == floor(nrow(tmp)/(72)), bar_day := "72 hours"]
   params[bar == floor(nrow(tmp)/(168)), bar_day := "168 hours"]
-  # params[bar == floor(nrow(tmp)/(10)), bar_day := "10 days"]
+  params[bar == floor(nrow(tmp)/(336)), bar_day := "336 hours"]
   # params[bar == floor(nrow(tmp)/(24)), bar_day := "24 days"]
   # params[bar == floor(nrow(tmp)/(5)), bar_day := "5 days"]
-  params[, bar_day :=factor(bar_day, levels = c(unique(params$bar_day)))]
+  # params[, bar_day :=factor(bar_day, levels = c(unique(params$bar_day)))]
   # params <- params[bar_day =="3 days" & tp =="0.1" & med_num == 1]
   
   # 40 days_0.3_1
@@ -353,7 +346,7 @@ for (i in 1:length(data_list)){
 }
 
 
-})
+
 # htmlwidgets::saveWidget(p, "profile.html")  
 fund_list_pair <- bind_rows(lapply(fund_list_pair, bind_rows))
 # fund_list_pair <- lapply(fund_list_pair, as.data.frame)
@@ -377,7 +370,7 @@ metrics <- test[exceeded_funds==F, list(sum_bet = sum(total_bet),
                                         mean_hodl = median(hodl)), by=.(param_concatenated)]
 metrics[, percent:= sum_quote/funds]
 
-save(metrics, file="metrics.Rdata")
+save(metrics, file="metrics_80pairs_longperiod.Rdata")
 
 
 metrics_pair <- test[, list(sum_bet = sum(total_bet),
