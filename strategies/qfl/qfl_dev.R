@@ -153,7 +153,7 @@ periods[, pair:as.factor(pair)]
 #               "ZRXUSD"  ,  "RADUSD"  ,  "ICXUSD"  ,  "NEIROUSD"  ,"SAGAUSD" ,  "GALUSD"  ,  "RENUSD" ,   "BLURUSD"  , "LSKUSD"  ,  "BLZUSD"   ,
 #               "OMGUSD"  ,  "AXSUSD"  ,  "ACHUSD"  ,  "KEYUSD"  ,  "LRCUSD"  ,  "COMPUSD" ,  "BODENUSD"  ,"TREMPUSD" , "WAXLUSD"  , "LPTUSD" )
 # selected <- selected[1:10]
-selected <- sample(names, 10)
+selected <- sample(names, 100)
 idx <- which(names %in%selected)
 data <- data[idx]
 names <- names[idx]
@@ -349,7 +349,7 @@ for (i in 1:length(data_list)){
 }
 end_time <- Sys.time()
 total_time <- start_time-end_time
-Time difference of -6.264234 mins
+# Time difference of -6.264234 mins
 
 funds_analysis <- bind_rows(lapply(fund_list_pair, bind_rows))
 funds_analysis[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]

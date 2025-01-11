@@ -4,19 +4,19 @@ path_source <- "Source"
 files.sources = list.files(path_source, full.names = T)
 sapply(files.sources, source)
 
-# 80 pairs 2 years
-# 168 hours_0.15_5_0.05_0.3_0.05
+
+# 72 hours_0.15_5_0.2_0.5_0.01
 
 # Bot parameters
 options(scipen = 999)
-n_pairs <- 130
+n_pairs <- 205
 bet <- 5
-bar <- 168
+bar <- 72
 tp <- 0.15
 med_num <- 5
-start_point <- 0.05
-end_point <- 0.3
-step <- 0.05
+start_point <- 0.2
+end_point <- 0.5
+step <- 0.01
 grid <-  -1*seq(start_point, end_point, step)
 
 # Get all pairs in exchange
