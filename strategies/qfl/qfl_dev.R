@@ -153,7 +153,7 @@ periods[, pair:as.factor(pair)]
 #               "ZRXUSD"  ,  "RADUSD"  ,  "ICXUSD"  ,  "NEIROUSD"  ,"SAGAUSD" ,  "GALUSD"  ,  "RENUSD" ,   "BLURUSD"  , "LSKUSD"  ,  "BLZUSD"   ,
 #               "OMGUSD"  ,  "AXSUSD"  ,  "ACHUSD"  ,  "KEYUSD"  ,  "LRCUSD"  ,  "COMPUSD" ,  "BODENUSD"  ,"TREMPUSD" , "WAXLUSD"  , "LPTUSD" )
 # selected <- selected[1:10]
-selected <- sample(names, 100)
+selected <- sample(names, 1)
 idx <- which(names %in%selected)
 data <- data[idx]
 names <- names[idx]
@@ -174,6 +174,7 @@ pair_results <- list()
 # stopifnot(cover_funds<funds)
 # p <- profvis({
 start_time <- Sys.time()
+number_trades <- 8 -2 # two are added in total 8
 
 for (i in 1:length(data_list)){
 # for (i in 120:160){
@@ -183,26 +184,25 @@ for (i in 1:length(data_list)){
   # 24 hours_0.08_5_0.01_0.4_0.01
   # look_back <- data.table(bar=c(floor(nrow(tmp)/(24)), floor(nrow(tmp)/(48)), floor(nrow(tmp)/(72)),
   #                               floor(nrow(tmp)/(168)), floor(nrow(tmp)/(504)), floor(nrow(tmp)/(336))),flag=1)
-  look_back <- data.table(bar=c(floor(nrow(tmp)/(168))),flag=1)
+  look_back <- data.table(bar=c(floor(nrow(tmp)/(72))),flag=1)
   # look_back <- data.table(bar=c(floor(nrow(tmp)/(24))),flag=1)
   # TP <- data.table(tp=c(0.02,0.05,0.08,0.1),flag=1)
   # TP <- data.table(tp = c(0.2),flag=1)
-  TP <- data.table(tp = c(0.01, 0.025, 0.05,0.08, 0.1, 0.15),flag=1)
+  TP <- data.table(tp = c(0.3),flag=1)
   # median_number <- data.table(med_num=c(1,2,4,5,3),flag=1)
   median_number <- data.table(med_num=c(5),flag=1)
-  start_point <- data.table(start_point = c(0.01,0.025, 0.05),flag=1)
-  end_point <- data.table(end_point = c(0.1,0.2, 0.3, 0.4),flag=1)
-  step <- data.table(step = c(0.01,0.025, 0.05),flag=1)
+  start_point <- data.table(start_point = c(0.2),flag=1)
+  end_point <- data.table(end_point = c(0.5),flag=1)
+  n_trades <- data.table(n_trades = number_trades, flag = 1)
   # start_point <- data.table(start_point = c(0.05),flag=1)
   # start_point <- data.table(start_point = c(0.01,0.025, 0.05),flag=1)
   # end_point <- data.table(end_point = c(0.1, 0.3, 0.4),flag=1)
   # end_point <- data.table(end_point = c(0.4),flag=1)
-  step <- data.table(step = c(0.01, 0.025,0.05, 0.1),flag=1)
   # step <- data.table(step = c(0.01),flag=1)
   params <- left_join(look_back,TP)%>%left_join(median_number)%>%
     left_join(start_point)%>%
     left_join(end_point)%>%
-    left_join(step)
+    left_join(n_trades)
   params[bar == floor(nrow(tmp)/(24)), bar_day := "24 hours"]
   params[bar == floor(nrow(tmp)/(48)), bar_day := "48 hours"]
   params[bar == floor(nrow(tmp)/(72)), bar_day := "72 hours"]
@@ -212,6 +212,7 @@ for (i in 1:length(data_list)){
   # params[bar == floor(nrow(tmp)/(5)), bar_day := "5 days"]
   params[, bar_day :=factor(bar_day, levels = c(unique(params$bar_day)))]
   # params <- params[bar_day =="3 days" & tp =="0.1" & med_num == 1]
+  params[, step := (end_point-start_point)/n_trades]
   
   # 40 days_0.3_1
   
@@ -352,25 +353,28 @@ total_time <- start_time-end_time
 # Time difference of -6.264234 mins
 
 funds_analysis <- bind_rows(lapply(fund_list_pair, bind_rows))
-funds_analysis[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
+funds_analysis[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point,n_trades, step, sep="_"), by =.I]
 exceeded_funds_bool <- funds_analysis[, list(sum_funds=sum(funds_pair)), by = list(interval_enter, param_concatenated)]
 exceeded_funds_num <- funds_analysis[, list(sum_funds=sum(funds_pair)), by = list(interval_enter, param_concatenated)][, list(overhead = min(sum_funds)), by = param_concatenated]
 exceeded_funds_bool[, exceeded_funds := any(sum_funds<(-funds)), by = param_concatenated]
 exceeded_funds_bool <- unique(exceeded_funds_bool[, .(param_concatenated, exceeded_funds)])
+View(funds_analysis)
 
 
 
 test<- rbindlist(pair_results, fill = T)
-test[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point, step, sep="_"), by =.I]
+test[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point,n_trades, step, sep="_"), by =.I]
 metrics <- test[, list(sum_bet = sum(total_bet),
                        sum_quote = sum(quote_res),
                        mean_hodl = median(hodl)), by=.(param_concatenated)]
 metrics[, percent:= sum_quote/funds]
 metrics <- merge(metrics, exceeded_funds_bool, all.x = T)
 metrics <- merge(metrics, exceeded_funds_num, all.x = T)
-View(metrics)
 
-
+candles(tmp)+
+  geom_point(data=final_grid[!is.na(interval_enter) & position == "long"], aes(x=interval_enter, y=grid), fill="lightblue3",colour="black", shape =24, size=2)+
+  geom_point(data=final_grid[!is.na(interval_exit_tp) & position == "long" ], aes(x=interval_exit_tp, y=price_exits), fill="darkorchid1", colour="black",shape =25, size=2)
+  
 
 
 # very big --

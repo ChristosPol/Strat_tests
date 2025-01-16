@@ -3,18 +3,17 @@
 library(cronR)
 
 # Path of live trading Rscript
-path <- "/Users/christos.polysopoulos/Repositories/QFL_Bot/Code/02_Send_sell_orders.R"
+path <- ""
 
 # Command
 cmd <- cron_rscript(path)
 
 # add frequency and intervals
-cron_add(cmd, frequency = 'hourly', id = 'Live trading', description = 'Live trading')
+cron_add(command = cmd, frequency = 'custom', at = '30 15 */3 * *', id = 'setup_grid', description = 'Live trading every 72 hours at 3:30 PM')
 
-# cron_add(cmd,  frequency = '*/15 * * * *', id = 'Live trading', description = 'Live trading')
 # Check all jobs
 cron_ls()
 
 # Stop Job
 cron_clear(ask = FALSE)
-cron_rm(id = "Live trading")
+cron_rm(id = "setup_grid")

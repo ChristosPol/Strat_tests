@@ -1,11 +1,13 @@
+rm(list=ls())
+gc()
+
+
 
 setDTthreads(1)
 library(doParallel)
 library(foreach)
 library(data.table)
 
-rm(list=ls())
-gc()
 # Source functions
 funds <- 10000
 bet <- 5
@@ -55,7 +57,7 @@ gc()
 data_list_bk <- copy(data_list)
 
 # RESTART HERE
-left_date <- "2024-08-01"
+left_date <- "2023-06-01"
 right_date <- "2024-12-01"
 
 names <- list.files(data_path, full.names = F)
@@ -159,8 +161,8 @@ periods[, pair:as.factor(pair)]
 #               "ZRXUSD"  ,  "RADUSD"  ,  "ICXUSD"  ,  "NEIROUSD"  ,"SAGAUSD" ,  "GALUSD"  ,  "RENUSD" ,   "BLURUSD"  , "LSKUSD"  ,  "BLZUSD"   ,
 #               "OMGUSD"  ,  "AXSUSD"  ,  "ACHUSD"  ,  "KEYUSD"  ,  "LRCUSD"  ,  "COMPUSD" ,  "BODENUSD"  ,"TREMPUSD" , "WAXLUSD"  , "LPTUSD" )
 # selected <- selected[1:70]
-# selected <- sample(names, 100)
-selected <- names
+selected <- sample(names, 150)
+# selected <- names
 idx <- which(names %in%selected)
 data <- data[idx]
 names <- names[idx]
@@ -182,7 +184,7 @@ pair_results <- list()
 # p <- profvis({
 # Initialize progress bar
 # Enable progress bar for foreach
-
+i <-1
 library(doSNOW)
 cl <- makeCluster(6)
 registerDoSNOW(cl)
@@ -204,10 +206,10 @@ pair_results <- foreach(i = seq_along(data_list), .packages = c("data.table", "d
   tmp_size <- nrow(tmp)
   pair <- unique(tmp$pair)
   # Precompute constants
-  look_back <- data.table(bar = floor(tmp_size / c(168, 336, 504)), flag = 1)
-  TP <- data.table(tp = c(0.05, 0.1, 0.15, 0.2), flag = 1)
+  look_back <- data.table(bar = floor(tmp_size / c(72)), flag = 1)
+  TP <- data.table(tp = c(0.15), flag = 1)
   median_number <- data.table(med_num = 5, flag = 1)
-  start_point <- data.table(start_point = c(0.1,0.15, 0.2), flag = 1)
+  start_point <- data.table(start_point = c(0.01, 0.025, 0.05, 0.1, 0.2), flag = 1)
   end_point <- data.table(end_point = c(0.3, 0.4, 0.5), flag = 1)
   n_trades <- data.table(n_trades = number_trades, flag = 1)
   
@@ -216,12 +218,12 @@ pair_results <- foreach(i = seq_along(data_list), .packages = c("data.table", "d
     left_join(start_point)%>%
     left_join(end_point)%>%
     left_join(n_trades)
-  params[bar == floor(nrow(tmp)/(24)), bar_day := "24 hours"]
-  params[bar == floor(nrow(tmp)/(48)), bar_day := "48 hours"]
-  params[bar == floor(nrow(tmp)/(72)), bar_day := "72 hours"]
-  params[bar == floor(nrow(tmp)/(168)), bar_day := "168 hours"]
-  params[bar == floor(nrow(tmp)/(504)), bar_day := "504 hours"]
-  params[bar == floor(nrow(tmp)/(336)), bar_day := "336 hours"]
+  # params[bar == floor(nrow(tmp)/(24)), bar_day := "24 hours"]
+  # params[bar == floor(nrow(tmp)/(48)), bar_day := "48 hours"]
+  params[bar == floor(tmp_size/(72)), bar_day := "72 hours"]
+  # params[bar == floor(nrow(tmp)/(168)), bar_day := "168 hours"]
+  # params[bar == floor(nrow(tmp)/(504)), bar_day := "504 hours"]
+  # params[bar == floor(nrow(tmp)/(336)), bar_day := "336 hours"]
   params[, step := (end_point-start_point)/n_trades]
   
   # Process params
@@ -366,7 +368,17 @@ fund_list_pair_tt <- lapply(pair_results, `[[`, "fund_list_pair")
 fund_list_pair_tt <- rbindlist(lapply(X =fund_list_pair_tt, rbindlist ))
 
 fund_list_pair_tt[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point,n_trades, step, sep="_"), by =.I]
-exceeded_funds_bool <- fund_list_pair_tt[, list(sum_funds=sum(funds_pair)), by = list(interval_enter, param_concatenated)]
+exceeded_funds_bool <- fund_list_pair_tt[, list(sum_funds=sum(funds_pair), sum_entr =sum(entr), sum_ex = sum(exit)), by = list(interval_enter, param_concatenated)]
+setorder(exceeded_funds_bool, interval_enter)
+exceeded_funds_bool[, balance := funds +sum_funds]
+ggplot(exceeded_funds_bool, aes(x = interval_enter, y = balance))+
+  geom_line()
+
+ggplot(exceeded_funds_bool, aes(x = interval_enter, y = sum_ex))+
+  geom_line(colour = "green")+
+  geom_line(aes(x = interval_enter, y = -1*sum_entr), colour="red")
+
+
 exceeded_funds_num <- fund_list_pair_tt[, list(sum_funds=sum(funds_pair)), by = list(interval_enter, param_concatenated)][, list(overhead = min(sum_funds)), by = param_concatenated]
 exceeded_funds_bool[, exceeded_funds := any(sum_funds<(-funds)), by = param_concatenated]
 exceeded_funds_bool <- unique(exceeded_funds_bool[, .(param_concatenated, exceeded_funds)])
@@ -379,6 +391,6 @@ metrics[, percent:= sum_quote/funds]
 metrics <- merge(metrics, exceeded_funds_bool, all.x = T)
 metrics <- merge(metrics, exceeded_funds_num, all.x = T)
 setorder(metrics, -percent)
-
+metrics
 # further analysis
 pair_results_tt
