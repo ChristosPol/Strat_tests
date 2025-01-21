@@ -57,7 +57,7 @@ gc()
 data_list_bk <- copy(data_list)
 
 # RESTART HERE
-left_date <- "2023-06-01"
+left_date <- "2024-01-01"
 right_date <- "2024-12-01"
 
 names <- list.files(data_path, full.names = F)
@@ -139,28 +139,7 @@ periods <- data.table(left=as.Date(unlist(lapply(periods, "[[", 1))), right= as.
 setDT(periods)
 periods[, pair := names]
 periods[, pair:as.factor(pair)]
-# ggplot(periods, aes(y = pair)) +
-#   geom_segment(aes(x = left, xend = right, y = pair, yend = pair, color = pair), size = 1.5) +
-#   # geom_text(aes(x = left, label = pair), hjust = -0.1, size = 4, color = "black") +
-#   theme_minimal() +
-#   theme(axis.text.y = element_text(size = 12), legend.position = "none")
 
-
-# selected <- sample(names, 27, replace = F)
-# selected <- c("XXBTZUSD",  "XXRPZUSD" , "SOLUSD"  ,  "XDGUSD"   , "ADAUSD" ,   "ALGOUSD" ,  "FTMUSD"  ,  "LINKUSD" ,  "DOTUSD"   , "TAOUSD"   ,
-#               "WIFUSD" ,   "AVAXUSD"  , "ONDOUSD"  , "UNIUSD"  ,  "BONKUSD"  , "STXUSD"  ,  "FWOGUSD"  , "XTZUSD" ,   "SEIUSD" ,   "TIAUSD"   ,
-#               "SHIBUSD" ,  "RENDERUSD", "NEARUSD"  , "INJUSD"  ,  "RUNEUSD" ,  "SUPERUSD" , "FETUSD" ,   "EIGENUSD", "FLRUSD"   , "KASUSD"   ,
-#               "SANDUSD" ,  "FILUSD"  ,  "ICPUSD" ,   "DAIUSD"  ,  "ARBUSD"  ,  "APTUSD"  ,  "BCHUSD"  ,  "KSMUSD"  ,  "TONUSD"  ,  "SCRTUSD"  ,
-#               "JASMYUSD" , "POPCATUSD", "MOGUSD"  ,  "SYNUSD"  ,  "APEUSD"   , "JUPUSD"  ,  "MATICUSD"  ,"WBTCUSD"  , "GOATUSD"  , "ATOMUSD"  ,
-#               "CLOUDUSD" , "SGBUSD"  ,  "PYTHUSD" ,  "GALAUSD"  , "AKTUSD"  ,  "NANOUSD"  , "APUUSD"  ,  "GRTUSD"  ,  "FLOWUSD" ,  "OPUSD"    ,
-#               "LUNAUSD" ,  "ARKMUSD"  , "IMXUSD"  ,  "MANAUSD"  , "JTOUSD"  ,  "POLUSD"  ,  "DASHUSD" ,  "PNUTUSD"  , "DRIFTUSD" , "NOSUSD"   ,
-#               "CVXUSD"  ,  "COTIUSD" ,  "BONDUSD"  , "MKRUSD"  ,  "ZROUSD"  ,  "FLOKIUSD" , "RAYUSD"  ,  "PONKEUSD" , "EGLDUSD" ,  "GMTUSD"   ,
-#               "MINAUSD" ,  "WUSD"    ,  "MSOLUSD" ,  "STRKUSD" ,  "OCEANUSD" , "HNTUSD"  ,  "API3USD" ,  "ZKUSD"   ,  "KAVAUSD" ,  "LCXUSD"   ,
-#               "DYDXUSD"  , "ENSUSD"   , "HONEYUSD" , "RARIUSD" ,  "SNXUSD" ,   "BSXUSD"  ,  "ETHFIUSD" , "ENJUSD"  ,  "EWTUSD"  ,  "BTTUSD"   ,
-#               "CFGUSD"  ,  "POLISUSD" , "MEWUSD"  ,  "SCUSD"  ,   "ACAUSD"  ,  "PRCLUSD" ,  "LUNA2USD" , "EOSUSD" ,   "GLMRUSD" ,  "JUNOUSD"  ,
-#               "ZRXUSD"  ,  "RADUSD"  ,  "ICXUSD"  ,  "NEIROUSD"  ,"SAGAUSD" ,  "GALUSD"  ,  "RENUSD" ,   "BLURUSD"  , "LSKUSD"  ,  "BLZUSD"   ,
-#               "OMGUSD"  ,  "AXSUSD"  ,  "ACHUSD"  ,  "KEYUSD"  ,  "LRCUSD"  ,  "COMPUSD" ,  "BODENUSD"  ,"TREMPUSD" , "WAXLUSD"  , "LPTUSD" )
-# selected <- selected[1:70]
 selected <- sample(names, 150)
 # selected <- names
 idx <- which(names %in%selected)
@@ -209,8 +188,8 @@ pair_results <- foreach(i = seq_along(data_list), .packages = c("data.table", "d
   look_back <- data.table(bar = floor(tmp_size / c(72)), flag = 1)
   TP <- data.table(tp = c(0.15), flag = 1)
   median_number <- data.table(med_num = 5, flag = 1)
-  start_point <- data.table(start_point = c(0.01, 0.025, 0.05, 0.1, 0.2), flag = 1)
-  end_point <- data.table(end_point = c(0.3, 0.4, 0.5), flag = 1)
+  start_point <- data.table(start_point = c(0.1), flag = 1)
+  end_point <- data.table(end_point = c(0.6), flag = 1)
   n_trades <- data.table(n_trades = number_trades, flag = 1)
   
   
@@ -393,4 +372,4 @@ metrics <- merge(metrics, exceeded_funds_num, all.x = T)
 setorder(metrics, -percent)
 metrics
 # further analysis
-pair_results_tt
+length(selected)

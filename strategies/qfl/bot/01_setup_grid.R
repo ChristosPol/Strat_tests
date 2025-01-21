@@ -15,6 +15,16 @@ tp <- 0.15
 med_num <- 5
 start_point <- 0.2
 end_point <- 0.5
+number_trades <- 8-2 # two are added in total 8
+step  <- (end_point-start_point)/number_trades
+avail <- current_avail_funds()
+needed <- n_pairs*bet*(number_trades+2)
+volume24h <- 50000
+
+if(avail > needed){
+  "BOT"  
+}
+
 
 grid <-  -1*seq(start_point, end_point, step)
 
@@ -36,10 +46,13 @@ info_usd <- info_usd[!api_name %in% c("USDTZUSD", "USDCUSD", "ZEURZUSD",
                                       "USDSUSD", "USDQUSD")]
 setorder(info_usd, -USD_amount)
 
-
+# Need some trading volume
+info_usd <- info_usd[USD_amount > volume24h]
 
 # Select pairs by volume
-selected_pairs <- info_usd[1:n_pairs]
+selected_pairs <- info_usd[sample(x = nrow(info_usd), n_pairs), ]
+
+print(paste0("Number of pairs going into live trading: ", nrow(selected_pairs)))
 
 # Calculate orders grid
 df_list <- list()

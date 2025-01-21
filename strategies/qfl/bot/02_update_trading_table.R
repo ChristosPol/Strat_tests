@@ -1,3 +1,5 @@
+# Need to add to closed open sell orders too.
+
 rm(list = ls())
 
 path_source <- "Source"

@@ -41,10 +41,10 @@ setDTthreads(1)
 options(stringsAsFactors = FALSE)
 
 # API info
-#api_info <- read.table(paste0("/Users/christospolysopoulos/Repositories/Private/", "API_Keys.txt"),
-#                       sep = ";", header = T)
-#API_Key <- as.character(api_info$API_Key)
-#API_Sign <- as.character(api_info$API_Sign)
+api_info <- read.table(paste0("/Users/christospolysopoulos/Repositories/Private/", "API_Keys.txt"),
+                      sep = ";", header = T)
+API_Key <- as.character(api_info$API_Key)
+API_Sign <- as.character(api_info$API_Sign)
 
 
 # Functions --------------------------------------------------------------------
