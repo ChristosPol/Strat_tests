@@ -18,7 +18,10 @@ all_pairs <- names(all_pairs)
 all_pairs <- all_pairs[str_sub(all_pairs,start = -3) == "USD"]
 all_pairs <- all_pairs[!all_pairs %in%c("DAIUSD", "JUPUSD", "PAXGUSD","USDCUSD","ZGBPZUSD","ZEURZUSD", "USDTZUSD")]
 
-for(i in 88:length(all_pairs)){
+
+all_pairs <- list.files("Data")
+i <- 1
+for(i in 1:length(all_pairs)){
   
   # Source functions
   path_source <- "Source"
@@ -27,13 +30,13 @@ for(i in 88:length(all_pairs)){
   
   # Choose which unix time to use for pulling data
   # Choose from ["start_of_time", "manually", "latest_available"]
-  unix_time <- "manually"
+  unix_time <- "latest_available"
   
   # Choose any pair to pull
   pair <- all_pairs[i]
   # pair <- "SHIBEUR"
   # Path to save results
-  data_path <- "Data_since_1"
+  data_path <- "Data"
   
   # Create pair directory
   dir.create(paste(data_path, pair, sep ="/"), showWarnings = T)

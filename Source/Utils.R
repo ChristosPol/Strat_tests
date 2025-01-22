@@ -364,7 +364,7 @@ select_period <- function(unix_time, diff_time) {
     file <- paste0(pair_data_results, "/", pair, ".csv.gz")
     nL <- countLines(file)
     dt <- fread(file, skip = nL-1)
-    initial_id <- dt$V6  
+    initial_id <- dt$V8  
   }
   initial_id
 }
