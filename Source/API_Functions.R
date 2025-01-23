@@ -199,7 +199,7 @@ hist_trades_pair <- function(sleep, hist_id, pair){
     # colnames(temp) <- c("price", "volume", "epoch_time", "buy_sell", "market_limit",
     #                      "miscellaneous", "last_id", "Date_POSIXct", "Time")
     temp$Date <- as.Date(temp$Date_POSIXct)
-    temp$Hour <- substr(temp$Time, 1,5)
+    temp$Hour <- substr(temp$Time, 1, 5)
     # [1] "price"         "volume"        "time"          "buy_sell"      "market_limit" 
     # [6] "miscellaneous" "trade_id"      "last_time"     "Date_POSIXct"  "Time"         
     # [11] "Date"          "Hour" 
@@ -210,7 +210,7 @@ hist_trades_pair <- function(sleep, hist_id, pair){
     fwrite(temp, file, sep = ",", row.names = FALSE,
            col.names = FALSE,
            append = TRUE)
-    print(paste0("Current time: " ,Sys.time()))
+    print(paste0("Current time: " ,Sys.time(), " for ", pair))
     print(paste0("Period of 1000 trades received: ",
                  head(as.character(temp$Date_POSIXct), 1),
                  "-" ,

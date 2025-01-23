@@ -58,7 +58,7 @@ data_list_bk <- copy(data_list)
 
 # RESTART HERE
 left_date <- "2024-01-01"
-right_date <- "2024-12-01"
+right_date <- "2025-01-20"
 
 names <- list.files(data_path, full.names = F)
 
@@ -140,8 +140,8 @@ setDT(periods)
 periods[, pair := names]
 periods[, pair:as.factor(pair)]
 
-selected <- sample(names, 150)
-# selected <- names
+# selected <- sample(names, 150)
+selected <- names
 idx <- which(names %in%selected)
 data <- data[idx]
 names <- names[idx]
@@ -371,5 +371,4 @@ metrics <- merge(metrics, exceeded_funds_bool, all.x = T)
 metrics <- merge(metrics, exceeded_funds_num, all.x = T)
 setorder(metrics, -percent)
 metrics
-# further analysis
-length(selected)
+

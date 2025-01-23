@@ -50,8 +50,11 @@ setorder(info_usd, -USD_amount)
 info_usd <- info_usd[USD_amount > volume24h]
 
 # Select pairs by volume
-selected_pairs <- info_usd[sample(x = nrow(info_usd), n_pairs), ]
-
+if(nrow(info_usd) >= n_pairs ){
+  selected_pairs <- info_usd[sample(x = nrow(info_usd), n_pairs), ]  
+} else {
+  selected_pairs <- copy(info_usd)
+}
 print(paste0("Number of pairs going into live trading: ", nrow(selected_pairs)))
 
 # Calculate orders grid

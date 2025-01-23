@@ -16,10 +16,12 @@ tb <- jsonlite::fromJSON(url)
 all_pairs <- unlist(lapply(lapply(tb$result, "[[", "altname"), function(x) length(x)>0))
 all_pairs <- names(all_pairs)
 all_pairs <- all_pairs[str_sub(all_pairs,start = -3) == "USD"]
-all_pairs <- all_pairs[!all_pairs %in%c("DAIUSD", "JUPUSD", "PAXGUSD","USDCUSD","ZGBPZUSD","ZEURZUSD", "USDTZUSD")]
+all_pairs <- all_pairs[!all_pairs %in%c("DAIUSD", "JUPUSD","EURQUSD","PAXGUSD","USDCUSD","ZGBPZUSD","ZEURZUSD", "USDTZUSD")]
 
 
 all_pairs <- list.files("Data")
+all_pairs <- all_pairs[!all_pairs %in%c("EURQUSD")]
+
 i <- 1
 for(i in 1:length(all_pairs)){
   
