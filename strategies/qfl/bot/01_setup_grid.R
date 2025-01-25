@@ -8,7 +8,7 @@ sapply(files.sources, source)
 
 # Bot parameters
 options(scipen = 999)
-n_pairs <- 150
+n_pairs <- 1
 bet   <- 5
 bar <- 72
 tp <- 0.15
@@ -21,8 +21,24 @@ avail <- current_avail_funds()
 needed <- n_pairs*bet*(number_trades+2)
 volume24h <- 50000
 
+# First needs to be cancelled all open ones
+if("trading_table.Rdata" %in% list.files("strategies/qfl/bot/aux_files")){
+  load(file ="strategies/qfl/bot/aux_files/trading_table.Rdata")
+  for(i in 1:nrow(trading_table)){
+    msg <- tryCatch({
+      if(trading_table$status_enter[i] == "OPEN"){
+        trading_table$status_enter[i] <- "CANCELLED"
+        cancel_it <- cancel_order(url = "https://api.kraken.com/0/private/CancelOrder",
+                                  key = API_Key, secret = API_Sign, txid = trading_table$buy_id[i])
+        Sys.sleep(1)
+      } 
+    }, error = function(e){
+    })
+  }
+}
+
 if(avail > needed){
-  "BOT"  
+  "BOT"
 }
 
 
@@ -82,8 +98,8 @@ for(i in 1:length(df_list)){
   }
   entries_limit <- c(support, support+support*grid)
   long_grid <- data.table(grid = entries_limit,
-                          status_enter=NA_character_,
-                          status_exit = NA_character_)
+                          status_enter="NOT_INITIATED",
+                          status_exit = "NOT_INITIATED")
   long_grid[, `:=`(interval_enter = as.POSIXct(rep(NA, nrow(long_grid))),
                    interval_exit_tp = as.POSIXct(rep(NA, nrow(long_grid))),
                    position = "long",
@@ -113,37 +129,38 @@ if(!"trading_table.Rdata" %in% list.files("strategies/qfl/bot/aux_files")){
     buy_it <- add_order(url = "https://api.kraken.com/0/private/AddOrder",
                         key = API_Key, secret = API_Sign, pair = trading_table$pair[i], type = "buy",
                         ordertype = "limit", volume = trading_table$vol[i], price = trading_table$grid[i])
+    
+    
     if(length(buy_it$error) == 1){
       trading_table$message[i] <- buy_it$error
     } else {
       trading_table$buy_id[i] <- buy_it$result$txid
       trading_table$status_enter[i] <- "OPEN"
-    }  
+    }
+    Sys.sleep(0.5)
   }
   # Save
   save(trading_table, file ="strategies/qfl/bot/aux_files/trading_table.Rdata")
 } else {
-  load(file ="strategies/qfl/bot/aux_files/trading_table.Rdata")
   
-  # Cancel orders from previous batch -
-  # Loop
-  for(i in 1:nrow(trading_table)){
-    cancel_it <- cancel_order(url = "https://api.kraken.com/0/private/CancelOrder",
-                              key = API_Key, secret = API_Sign, txid = trading_table$buy_id[i])
-    trading_table$status_enter[i] <- "CANCELLED"
-  }
   trading_table <- rbind(trading_table, batch_orders)
   
   for(i in 1:nrow(trading_table)){
-    buy_it <- add_order(url = "https://api.kraken.com/0/private/AddOrder",
-                        key = API_Key, secret = API_Sign, pair = trading_table$pair[i], type = "buy",
-                        ordertype = "limit", volume = trading_table$vol[i], price = trading_table$grid[i])
-    if(length(buy_it$error) == 1){
-      trading_table$message[i] <- buy_it$error
-    } else {
-      trading_table$buy_id[i] <- buy_it$result$txid
-      trading_table$status_enter[i] <- "OPEN"
-    }  
+    if(trading_table$status_enter[i] == "NOT_INITIATED"){
+      buy_it <- add_order(url = "https://api.kraken.com/0/private/AddOrder",
+                          key = API_Key, secret = API_Sign, pair = trading_table$pair[i], type = "buy",
+                          ordertype = "limit", volume = trading_table$vol[i], price = trading_table$grid[i])
+      Sys.sleep(0.5)
+      if(length(buy_it$error) == 1){
+        trading_table$message[i] <- buy_it$error
+      } else {
+        trading_table$buy_id[i] <- buy_it$result$txid
+        trading_table$status_enter[i] <- "OPEN"
+      }
+      
+    }
+    
+      
   }
   
   # Save
