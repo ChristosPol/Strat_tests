@@ -136,7 +136,7 @@ for(i in 1:nrow(selected_pairs)){
 # Note that the trading rate limits apply separately per currency pair,
 # so reaching the rate limits for one currency pair (XBT/USD for example)
 # does not affect trading on any other currency pair (LTC/EUR for example).
-cat("Calculating grid for all selected pairs")
+cat("Calculating grid for all selected pairs\n")
 grid_pair <- list()
 for(i in 1:length(df_list)){
   df_pair <- copy(df_list[[i]])
@@ -168,54 +168,54 @@ batch_orders[, batch := sample(x = 1:10E5,1)]
 cat(paste0("Grid with batch number ", unique(batch_orders$batch), " has finished calculation\n"))
 cat(paste0("Total number of limit buy orders to be sent: ", nrow(batch_orders), "\n"))
 
-# # Decimals
-# batch_orders <- merge(batch_orders, selected_pairs[, .(api_name, lot_decimals, pair_decimals)], by.x = "pair", by.y ="api_name", all.x = T)
-# batch_orders[, vol := round(bet/grid, lot_decimals)]
-# batch_orders[, grid := round(grid, pair_decimals)]
-# batch_orders[, exits := round(exits, pair_decimals)]
-# i <- 1
-# if(!"trading_table.Rdata" %in% list.files("strategies/qfl/bot/aux_files")){
-#   # Export trading table
-#   trading_table <- copy(batch_orders)
-#   for(i in 1:nrow(trading_table)){
-#     buy_it <- add_order(url = "https://api.kraken.com/0/private/AddOrder",
-#                         key = API_Key, secret = API_Sign, pair = trading_table$pair[i], type = "buy",
-#                         ordertype = "limit", volume = trading_table$vol[i], price = trading_table$grid[i])
-# 
-# 
-#     if(length(buy_it$error) == 1){
-#       trading_table$message[i] <- buy_it$error
-#     } else {
-#       trading_table$buy_id[i] <- buy_it$result$txid
-#       trading_table$status_enter[i] <- "OPEN"
-#     }
-#     Sys.sleep(0.5)
-#   }
-#   # Save
-#   save(trading_table, file ="strategies/qfl/bot/aux_files/trading_table.Rdata")
-# } else {
-# 
-#   trading_table <- rbind(trading_table, batch_orders)
-# 
-#   for(i in 1:nrow(trading_table)){
-#     if(trading_table$status_enter[i] == "NOT_INITIATED"){
-#       buy_it <- add_order(url = "https://api.kraken.com/0/private/AddOrder",
-#                           key = API_Key, secret = API_Sign, pair = trading_table$pair[i], type = "buy",
-#                           ordertype = "limit", volume = trading_table$vol[i], price = trading_table$grid[i])
-#       Sys.sleep(0.5)
-#       if(length(buy_it$error) == 1){
-#         trading_table$message[i] <- buy_it$error
-#       } else {
-#         trading_table$buy_id[i] <- buy_it$result$txid
-#         trading_table$status_enter[i] <- "OPEN"
-#       }
-# 
-#     }
-# 
-# 
-#   }
-# 
-#   # Save
-#   save(trading_table, file ="strategies/qfl/bot/aux_files/trading_table.Rdata")
-# }
+# Decimals
+batch_orders <- merge(batch_orders, selected_pairs[, .(api_name, lot_decimals, pair_decimals)], by.x = "pair", by.y ="api_name", all.x = T)
+batch_orders[, vol := round(bet/grid, lot_decimals)]
+batch_orders[, grid := round(grid, pair_decimals)]
+batch_orders[, exits := round(exits, pair_decimals)]
+i <- 1
+counter_buy <- 0
+counter_buy_error <- 0
+if(!"trading_table.Rdata" %in% list.files("/Users/christospolysopoulos/Repositories/Private/Strat_tests/strategies/qfl/bot/aux_files")){
+  # Export trading table
+  trading_table <- copy(batch_orders)
+  for(i in 1:nrow(trading_table)){
+    buy_it <- add_order(url = "https://api.kraken.com/0/private/AddOrder",
+                        key = API_Key, secret = API_Sign, pair = trading_table$pair[i], type = "buy",
+                        ordertype = "limit", volume = trading_table$vol[i], price = trading_table$grid[i])
+    if(length(buy_it$error) == 1){
+      trading_table$message[i] <- buy_it$error
+      counter_buy_error <- counter_buy_error+1
+    } else {
+      trading_table$buy_id[i] <- buy_it$result$txid
+      trading_table$status_enter[i] <- "OPEN"
+      counter_buy <- counter_buy+1
+    }
+    Sys.sleep(0.5)
+  }
+  # Save
+  save(trading_table, file ="/Users/christospolysopoulos/Repositories/Private/Strat_tests/strategies/qfl/bot/aux_files/trading_table.Rdata")
+} else {
+  trading_table <- rbind(trading_table, batch_orders)
+  for(i in 1:nrow(trading_table)){
+    if(trading_table$status_enter[i] == "NOT_INITIATED"){
+      buy_it <- add_order(url = "https://api.kraken.com/0/private/AddOrder",
+                          key = API_Key, secret = API_Sign, pair = trading_table$pair[i], type = "buy",
+                          ordertype = "limit", volume = trading_table$vol[i], price = trading_table$grid[i])
+      Sys.sleep(0.5)
+      if(length(buy_it$error) == 1){
+        trading_table$message[i] <- buy_it$error
+        counter_buy_error <- counter_buy_error+1
+      } else {
+        trading_table$buy_id[i] <- buy_it$result$txid
+        trading_table$status_enter[i] <- "OPEN"
+        counter_buy <- counter_buy+1
+      }
+    }
+  }
+  # Save
+  save(trading_table, file ="/Users/christospolysopoulos/Repositories/Private/Strat_tests/strategies/qfl/bot/aux_files/trading_table.Rdata")
+}
+cat(paste0("Number of limit buy orders succesfully opened: ", counter_buy,
+           "\nNumber of limit buy orders a problem has occured: ", counter_buy_error, "\n"))
 cat("\n")

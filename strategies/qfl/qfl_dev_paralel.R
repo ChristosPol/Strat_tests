@@ -58,7 +58,7 @@ data_list_bk <- copy(data_list)
 
 # RESTART HERE
 left_date <- "2024-01-01"
-right_date <- "2025-01-20"
+right_date <- "2025-01-25"
 
 names <- list.files(data_path, full.names = F)
 
@@ -140,8 +140,8 @@ setDT(periods)
 periods[, pair := names]
 periods[, pair:as.factor(pair)]
 
-# selected <- sample(names, 150)
-selected <- names
+selected <- sample(names, 50)
+# selected <- names
 idx <- which(names %in%selected)
 data <- data[idx]
 names <- names[idx]
@@ -156,13 +156,6 @@ fund_list_pair <- list()
 pair_results <- list()
 # Loop through all pairs
 
-# grid <-  -1*seq(0.05, 0.3, 0.05)
-# grid <-  -1*seq(0.01, 0.2, 0.025)
-# cover_funds <- length(grid)*length(data_list)*bet
-# stopifnot(cover_funds<funds)
-# p <- profvis({
-# Initialize progress bar
-# Enable progress bar for foreach
 i <-1
 library(doSNOW)
 cl <- makeCluster(6)
@@ -185,11 +178,11 @@ pair_results <- foreach(i = seq_along(data_list), .packages = c("data.table", "d
   tmp_size <- nrow(tmp)
   pair <- unique(tmp$pair)
   # Precompute constants
-  look_back <- data.table(bar = floor(tmp_size / c(72)), flag = 1)
-  TP <- data.table(tp = c(0.15), flag = 1)
+  look_back <- data.table(bar = floor(tmp_size / c(24)), flag = 1)
+  TP <- data.table(tp = c(0.02), flag = 1)
   median_number <- data.table(med_num = 5, flag = 1)
   start_point <- data.table(start_point = c(0.1), flag = 1)
-  end_point <- data.table(end_point = c(0.6), flag = 1)
+  end_point <- data.table(end_point = c(0.5), flag = 1)
   n_trades <- data.table(n_trades = number_trades, flag = 1)
   
   
@@ -197,9 +190,9 @@ pair_results <- foreach(i = seq_along(data_list), .packages = c("data.table", "d
     left_join(start_point)%>%
     left_join(end_point)%>%
     left_join(n_trades)
-  # params[bar == floor(nrow(tmp)/(24)), bar_day := "24 hours"]
+  params[bar == floor(nrow(tmp)/(24)), bar_day := "24 hours"]
   # params[bar == floor(nrow(tmp)/(48)), bar_day := "48 hours"]
-  params[bar == floor(tmp_size/(72)), bar_day := "72 hours"]
+  # params[bar == floor(tmp_size/(72)), bar_day := "72 hours"]
   # params[bar == floor(nrow(tmp)/(168)), bar_day := "168 hours"]
   # params[bar == floor(nrow(tmp)/(504)), bar_day := "504 hours"]
   # params[bar == floor(nrow(tmp)/(336)), bar_day := "336 hours"]
@@ -347,19 +340,28 @@ fund_list_pair_tt <- lapply(pair_results, `[[`, "fund_list_pair")
 fund_list_pair_tt <- rbindlist(lapply(X =fund_list_pair_tt, rbindlist ))
 
 fund_list_pair_tt[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point,n_trades, step, sep="_"), by =.I]
+
+
+# start_date <- as.POSIXct(min(fund_list_pair_tt$interval_enter), format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+# end_date <- as.POSIXct(max(fund_list_pair_tt$interval_enter), format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+# date_sequence <- seq(from = start_date, to = end_date, by = "hour")
+# my_dates <- data.table(all_dates = date_sequence, flag = 1)
+# test <- merge(my_dates, fund_list_pair_tt, by.x ="all_dates", by.y = "interval_enter", all.x = T)
+
 exceeded_funds_bool <- fund_list_pair_tt[, list(sum_funds=sum(funds_pair), sum_entr =sum(entr), sum_ex = sum(exit)), by = list(interval_enter, param_concatenated)]
-setorder(exceeded_funds_bool, interval_enter)
-exceeded_funds_bool[, balance := funds +sum_funds]
-ggplot(exceeded_funds_bool, aes(x = interval_enter, y = balance))+
-  geom_line()
+# exceeded_funds_bool[is.na(sum_funds), sum_funds := 0]
+# exceeded_funds_bool[is.na(sum_entr), sum_entr := 0]
+# exceeded_funds_bool[is.na(sum_ex), sum_ex := 0]
+setorder(exceeded_funds_bool, param_concatenated, interval_enter)
+exceeded_funds_bool[, cum_sum_entries := cumsum(sum_entr), by = param_concatenated]
+exceeded_funds_bool[, cum_sum_exits := cumsum(sum_ex), by = param_concatenated]
+exceeded_funds_bool[, balance := funds-cum_sum_entries+cum_sum_exits]
+exceeded_funds_num <- exceeded_funds_bool[, list(overhead = min(balance)), by =param_concatenated]
 
-ggplot(exceeded_funds_bool, aes(x = interval_enter, y = sum_ex))+
-  geom_line(colour = "green")+
-  geom_line(aes(x = interval_enter, y = -1*sum_entr), colour="red")
+ggplot(exceeded_funds_bool, aes(x = interval_enter, y = balance, colour= param_concatenated))+
+  geom_line()+theme(legend.position = "none")
 
-
-exceeded_funds_num <- fund_list_pair_tt[, list(sum_funds=sum(funds_pair)), by = list(interval_enter, param_concatenated)][, list(overhead = min(sum_funds)), by = param_concatenated]
-exceeded_funds_bool[, exceeded_funds := any(sum_funds<(-funds)), by = param_concatenated]
+exceeded_funds_bool[, exceeded_funds := any(balance<0), by = param_concatenated]
 exceeded_funds_bool <- unique(exceeded_funds_bool[, .(param_concatenated, exceeded_funds)])
 
 pair_results_tt[, param_concatenated := paste(bar_day, tp, med_num,start_point,end_point,n_trades, step, sep="_"), by =.I]
@@ -372,3 +374,12 @@ metrics <- merge(metrics, exceeded_funds_num, all.x = T)
 setorder(metrics, -percent)
 metrics
 
+# Equity
+# test <- fund_list_pair_tt[pair == "ACAUSD"]
+
+
+metrics_pair <- pair_results_tt[, list(sum_bet = sum(total_bet),
+                                  sum_quote = sum(quote_res),
+                                  mean_hodl = median(hodl)), by=.(param_concatenated,pair)]
+
+View(rbind(metrics, metrics_pair, fill = T))
