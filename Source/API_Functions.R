@@ -362,3 +362,14 @@ get_n_hist_orders <- function(n){
   all_orders_cache <- rbindlist(df_list, fill = T)
   return(all_orders_cache)
 }
+
+
+get_volume_USD <- function(pair, date){
+  df <- simple_OHLC(1440, pair = pair)
+  df <- df[as.Date(Date_POSIXct)==date]
+  df[, usd_vol := close*volume]
+  res <- data.table(pair=pair, date= date, usd_vol = df$usd_vol)
+  Sys.sleep(1)
+  return(res)
+}
+

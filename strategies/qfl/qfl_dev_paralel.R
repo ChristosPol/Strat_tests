@@ -140,7 +140,7 @@ setDT(periods)
 periods[, pair := names]
 periods[, pair:as.factor(pair)]
 
-selected <- sample(names, 50)
+selected <- sample(names, 40)
 # selected <- names
 idx <- which(names %in%selected)
 data <- data[idx]
@@ -179,10 +179,10 @@ pair_results <- foreach(i = seq_along(data_list), .packages = c("data.table", "d
   pair <- unique(tmp$pair)
   # Precompute constants
   look_back <- data.table(bar = floor(tmp_size / c(24)), flag = 1)
-  TP <- data.table(tp = c(0.02), flag = 1)
+  TP <- data.table(tp = c(0.02, 0.05, 0.1, 0.2), flag = 1)
   median_number <- data.table(med_num = 5, flag = 1)
-  start_point <- data.table(start_point = c(0.1), flag = 1)
-  end_point <- data.table(end_point = c(0.5), flag = 1)
+  start_point <- data.table(start_point = c(0.1, 0.2, 0.3), flag = 1)
+  end_point <- data.table(end_point = c(0.4, 0.5, 0.6), flag = 1)
   n_trades <- data.table(n_trades = number_trades, flag = 1)
   
   
@@ -372,7 +372,7 @@ metrics[, percent:= sum_quote/funds]
 metrics <- merge(metrics, exceeded_funds_bool, all.x = T)
 metrics <- merge(metrics, exceeded_funds_num, all.x = T)
 setorder(metrics, -percent)
-metrics
+View(metrics)
 
 # Equity
 # test <- fund_list_pair_tt[pair == "ACAUSD"]

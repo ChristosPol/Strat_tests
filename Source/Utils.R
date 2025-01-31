@@ -747,3 +747,56 @@ asset_info_ticker <- function(){
   df[, USD_amount := PRICE* VOLUME_24hours]
   return(df)
 }
+
+
+
+calendar_times <- function(x){
+  times <- data.frame(interval_updated = seq(min(x$interval), max(x$interval), "hours"), flag =1)
+  x <- merge(times, x, by.x="interval_updated", by.y="interval", all.x = T)
+  x$high <- na.locf(x$high)
+  x$low <- na.locf(x$low)
+  x$close <- na.locf(x$close)
+  x$open <- na.locf(x$open)
+  x$volume[is.na(x$volume)] <- 0
+  x$pair  <- na.locf(x$pair)
+  x$date <- as.Date(x$interval_updated)
+  colnames(x)[which(colnames(x)== "interval_updated")] <- "interval"
+  setDT(x)
+  return(x)
+}
+
+
+# Function to filter and extract exact period
+filter_and_extract <- function(dt_list, left_date, right_date) {
+  dt_list_filtered <- lapply(dt_list, function(dt) {
+    dt_min <- min(dt$date)
+    dt_max <- max(dt$date)
+    if (left_date >= dt_min && right_date <= dt_max) {
+      # Subset to the exact target period
+      extracted_data <- dt[date >= left_date & date <= right_date]
+      # Return only if the subset is not empty
+      if (nrow(extracted_data) > 0) {
+        return(extracted_data)
+      }
+    }
+    # Exclude if the period is not covered
+    return(NULL)
+  })
+  # Remove NULL elements
+  dt_list_filtered <- dt_list_filtered[!sapply(dt_list_filtered, is.null)]
+  return(dt_list_filtered)
+}
+
+
+g_d <- function(x) {
+  mi <- as.Date(min(x$interval))
+  ma <- as.Date(max(x$interval))
+  return(c(mi, ma))
+}
+
+
+
+rr_long_tp <- function(exit,bar){
+  r <- which(high_tmp[bar:length(high_tmp)]>exit)[1]+bar
+  return(r)
+}
